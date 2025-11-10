@@ -1,0 +1,6 @@
+﻿namespace FilmShelf.BAL.Exceptions;
+
+public class InvalidPasswordException : Exception
+{
+    public InvalidPasswordException(string message) : base(message) { }
+}

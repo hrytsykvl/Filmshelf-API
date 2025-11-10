@@ -1,0 +1,6 @@
+services:
+  filmshelf.api:
+    image: ${DOCKER_REGISTRY-}filmshelfapi
+    build:
+      context: .
+      dockerfile: FilmShelf.API/Dockerfile
