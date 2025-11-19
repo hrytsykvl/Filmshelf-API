@@ -22,5 +22,10 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
             .HasOne(r => r.Movie)
             .WithMany(m => m.Reviews)
             .HasForeignKey(r => r.MovieId);
+
+        builder
+            .HasOne(r => r.User)
+            .WithMany(u => u.Reviews)
+            .HasForeignKey(r => r.UserId);
     }
 }

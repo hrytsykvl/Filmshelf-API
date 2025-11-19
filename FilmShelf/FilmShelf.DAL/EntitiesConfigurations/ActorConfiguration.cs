@@ -8,6 +8,9 @@ public class ActorConfiguration : IEntityTypeConfiguration<Actor>
 {
     public void Configure(EntityTypeBuilder<Actor> builder)
     {
+        builder.Property(a => a.Id)
+            .ValueGeneratedNever();
+
         builder.Property(a => a.Name)
             .IsRequired()
             .HasMaxLength(100);
@@ -16,6 +19,6 @@ public class ActorConfiguration : IEntityTypeConfiguration<Actor>
             .IsRequired();
 
         builder.Property(a => a.Bio)
-            .HasMaxLength(500);
+            .HasMaxLength(10000);
     }
 }

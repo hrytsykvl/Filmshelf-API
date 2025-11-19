@@ -25,15 +25,12 @@ namespace FilmShelf.DAL.Migrations
             modelBuilder.Entity("FilmShelf.DAL.Entities.Actor", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Bio")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("BirthDate")
                         .HasColumnType("datetime2");
@@ -51,15 +48,12 @@ namespace FilmShelf.DAL.Migrations
             modelBuilder.Entity("FilmShelf.DAL.Entities.Director", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Bio")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("BirthDate")
                         .HasColumnType("datetime2");
@@ -77,10 +71,7 @@ namespace FilmShelf.DAL.Migrations
             modelBuilder.Entity("FilmShelf.DAL.Entities.Genre", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -98,10 +89,7 @@ namespace FilmShelf.DAL.Migrations
             modelBuilder.Entity("FilmShelf.DAL.Entities.Movie", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<double>("AverageRating")
                         .ValueGeneratedOnAdd()
@@ -111,14 +99,21 @@ namespace FilmShelf.DAL.Migrations
                     b.Property<int>("DirectorId")
                         .HasColumnType("int");
 
-                    b.Property<int>("GenreId")
-                        .HasColumnType("int");
+                    b.Property<string>("Overview")
+                        .IsRequired()
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PosterPath")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("ReleaseDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Runtime")
-                        .HasColumnType("int");
+                    b.Property<short>("Runtime")
+                        .HasColumnType("smallint");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -128,8 +123,6 @@ namespace FilmShelf.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DirectorId");
-
-                    b.HasIndex("GenreId");
 
                     b.ToTable("Movies");
                 });
@@ -154,6 +147,47 @@ namespace FilmShelf.DAL.Migrations
                     b.ToTable("MovieActors");
                 });
 
+            modelBuilder.Entity("FilmShelf.DAL.Entities.MovieGenre", b =>
+                {
+                    b.Property<int>("MovieId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MovieId", "GenreId");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("MovieGenres");
+                });
+
+            modelBuilder.Entity("FilmShelf.DAL.Entities.MoviePage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("MoviesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PageNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PageNumber")
+                        .IsUnique();
+
+                    b.ToTable("MoviePages");
+                });
+
             modelBuilder.Entity("FilmShelf.DAL.Entities.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -173,10 +207,10 @@ namespace FilmShelf.DAL.Migrations
                     b.Property<int>("MovieId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Rating")
+                    b.Property<byte>("Rating")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                        .HasColumnType("tinyint")
+                        .HasDefaultValue((byte)0);
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -184,6 +218,8 @@ namespace FilmShelf.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MovieId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Reviews");
                 });
@@ -208,6 +244,8 @@ namespace FilmShelf.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MovieId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Watchlists");
                 });
@@ -446,15 +484,7 @@ namespace FilmShelf.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FilmShelf.DAL.Entities.Genre", "Genre")
-                        .WithMany("Movies")
-                        .HasForeignKey("GenreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Director");
-
-                    b.Navigation("Genre");
                 });
 
             modelBuilder.Entity("FilmShelf.DAL.Entities.MovieActor", b =>
@@ -476,6 +506,25 @@ namespace FilmShelf.DAL.Migrations
                     b.Navigation("Movie");
                 });
 
+            modelBuilder.Entity("FilmShelf.DAL.Entities.MovieGenre", b =>
+                {
+                    b.HasOne("FilmShelf.DAL.Entities.Genre", "Genre")
+                        .WithMany("MovieGenres")
+                        .HasForeignKey("GenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FilmShelf.DAL.Entities.Movie", "Movie")
+                        .WithMany("MovieGenres")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Genre");
+
+                    b.Navigation("Movie");
+                });
+
             modelBuilder.Entity("FilmShelf.DAL.Entities.Review", b =>
                 {
                     b.HasOne("FilmShelf.DAL.Entities.Movie", "Movie")
@@ -484,7 +533,15 @@ namespace FilmShelf.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FilmShelf.DAL.Identity.ApplicationUser", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Movie");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FilmShelf.DAL.Entities.Watchlist", b =>
@@ -495,7 +552,15 @@ namespace FilmShelf.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FilmShelf.DAL.Identity.ApplicationUser", "User")
+                        .WithMany("Watchlists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Movie");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FilmShelf.DAL.Identity.RefreshToken", b =>
@@ -572,12 +637,14 @@ namespace FilmShelf.DAL.Migrations
 
             modelBuilder.Entity("FilmShelf.DAL.Entities.Genre", b =>
                 {
-                    b.Navigation("Movies");
+                    b.Navigation("MovieGenres");
                 });
 
             modelBuilder.Entity("FilmShelf.DAL.Entities.Movie", b =>
                 {
                     b.Navigation("MovieActors");
+
+                    b.Navigation("MovieGenres");
 
                     b.Navigation("Reviews");
 
@@ -587,6 +654,10 @@ namespace FilmShelf.DAL.Migrations
             modelBuilder.Entity("FilmShelf.DAL.Identity.ApplicationUser", b =>
                 {
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("Reviews");
+
+                    b.Navigation("Watchlists");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,5 +15,10 @@ public class WatchlistConfiguration : IEntityTypeConfiguration<Watchlist>
             .HasOne(w => w.Movie)
             .WithMany(m => m.Watchlists)
             .HasForeignKey(w => w.MovieId);
+
+        builder
+            .HasOne(w => w.User)
+            .WithMany(u => u.Watchlists)
+            .HasForeignKey(w => w.UserId);
     }
 }

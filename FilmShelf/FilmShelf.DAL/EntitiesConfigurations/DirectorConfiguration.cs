@@ -8,6 +8,9 @@ public class DirectorConfiguration : IEntityTypeConfiguration<Director>
 {
     public void Configure(EntityTypeBuilder<Director> builder)
     {
+        builder.Property(d => d.Id)
+            .ValueGeneratedNever();
+
         builder.Property(d => d.Name)
             .IsRequired()
             .HasMaxLength(100);
@@ -16,6 +19,6 @@ public class DirectorConfiguration : IEntityTypeConfiguration<Director>
             .IsRequired();
 
         builder.Property(d => d.Bio)
-            .HasMaxLength(500);
+            .HasMaxLength(10000);
     }
 }
