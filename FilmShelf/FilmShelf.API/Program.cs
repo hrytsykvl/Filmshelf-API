@@ -1,5 +1,7 @@
 using FilmShelf.API.Middlewares;
 using FilmShelf.API.VMs.Validators;
+using FilmShelf.API.Workers;
+using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.BAL.Options;
 using FilmShelf.BAL.Services;
@@ -7,6 +9,8 @@ using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Identity;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.DAL.Repositories;
+using FilmShelf.TMDbClient.Options;
+using FilmShelf.TMDbClient.Extensions;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,8 +18,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using RestSharp;
 using Serilog;
 using System.Reflection;
 using System.Text;
@@ -92,12 +98,29 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<MailJetSettings>(builder.Configuration.GetSection("MailJet"));
+builder.Services.Configure<TmdbSettings>(builder.Configuration.GetSection("TmdbSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IAccountService, AccountService>();
 builder.Services.AddTransient<ITokenService, JwtService>();
+builder.Services.AddTMDbClient();
+builder.Services.AddTransient<IMovieService, MovieService>();
+builder.Services.AddTransient<IMoviePageService, MoviePageService>();
+builder.Services.AddTransient<IMoviePageRepository, MoviePageRepository>();
 builder.Services.AddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddTransient<IMovieRepository, MovieRepository>();
+builder.Services.AddTransient<IDirectorRepository, DirectorRepository>();
+builder.Services.AddTransient<IGenreRepository, GenreRepository>();
+builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+builder.Services.AddHostedService<SyncBackgroundService>();
+builder.Services.AddSingleton(provider =>
+{
+    var tmdbSettings = provider.GetRequiredService<IOptions<TmdbSettings>>().Value;
+    var options = new RestClientOptions(tmdbSettings.BaseUrl);
+    return new RestClient(options);
+});
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
@@ -145,6 +168,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+using (var scope = app.Services.CreateScope())
+{
+    var tmdbSettings = scope.ServiceProvider.GetRequiredService<IOptions<TmdbSettings>>().Value;
+    PhotoPathGenerator.Initialize(tmdbSettings);
+}
 
 if (app.Environment.IsDevelopment())
 {

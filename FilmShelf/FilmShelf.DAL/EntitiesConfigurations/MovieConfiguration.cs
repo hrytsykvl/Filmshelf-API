@@ -8,9 +8,16 @@ public class MovieConfiguration : IEntityTypeConfiguration<Movie>
 {
     public void Configure(EntityTypeBuilder<Movie> builder)
     {
+        builder.Property(m => m.Id)
+            .ValueGeneratedNever();
+
         builder.Property(m => m.Title)
             .IsRequired()
             .HasMaxLength(200);
+
+        builder.Property(m => m.Overview)
+            .IsRequired()
+            .HasMaxLength(10000);
 
         builder.Property(m => m.ReleaseDate)
             .IsRequired();
@@ -18,14 +25,13 @@ public class MovieConfiguration : IEntityTypeConfiguration<Movie>
         builder.Property(m => m.Runtime)
             .IsRequired();
 
+        builder.Property(m => m.PosterPath)
+            .IsRequired()
+            .HasMaxLength(200);
+
         builder.Property(m => m.AverageRating)
             .HasColumnType("float")
             .HasDefaultValue(0.0f);
-
-        builder
-            .HasOne(m => m.Genre)
-            .WithMany(g => g.Movies)
-            .HasForeignKey(m => m.GenreId);
 
         builder
             .HasOne(m => m.Director)
