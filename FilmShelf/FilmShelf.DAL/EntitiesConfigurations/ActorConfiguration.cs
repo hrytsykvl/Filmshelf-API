@@ -15,8 +15,9 @@ public class ActorConfiguration : IEntityTypeConfiguration<Actor>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(a => a.BirthDate)
-            .IsRequired();
+        builder.Property(a => a.ProfilePath)
+            .IsRequired()
+            .HasMaxLength(200);
 
         builder.Property(a => a.Bio)
             .HasMaxLength(10000);

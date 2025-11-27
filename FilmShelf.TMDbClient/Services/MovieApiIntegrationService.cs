@@ -19,10 +19,10 @@ internal class MovieApiIntegrationService : IMovieApiIntegrationService
         _restClient = restClient;
     }
 
-    public async Task<DirectorDetailsResponse?> FetchDirectorDetailsAsync(int directorId)
+    public async Task<T?> FetchPersonDetailsAsync<T>(int personId)
     {
-        var request = CreateRequest($"person/{directorId}");
-        return await _restClient.GetAsync<DirectorDetailsResponse>(request);
+        var request = CreateRequest($"person/{personId}");
+        return await _restClient.GetAsync<T>(request);
     }
 
     public async Task<MovieCreditsResponse?> FetchMovieCreditsAsync(int movieId)

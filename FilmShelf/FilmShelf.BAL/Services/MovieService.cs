@@ -6,6 +6,7 @@ using FilmShelf.DAL.Entities;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.TMDbClient.Interfaces;
 using FilmShelf.TMDbClient.Options;
+using FilmShelf.TMDbClient.Responses;
 using Microsoft.Extensions.Options;
 
 namespace FilmShelf.BAL.Services;
@@ -47,7 +48,16 @@ public class MovieService : IMovieService
                 ReleaseDate = movie.ReleaseDate,
                 Runtime = movie.Runtime,
                 PosterPath = movie.PosterPath,
-                AverageRating = movie.AverageRating
+                AverageRating = movie.AverageRating,
+                Cast = movie.MovieActors
+                    .Select(ma => new CastMemberDTO
+                    {
+                        Id = ma.Actor.Id,
+                        Name = ma.Actor.Name,
+                        Character = ma.Role,
+                        ProfilePath = ma.Actor.ProfilePath
+                    })
+                    .ToList()
             };
         }
 
@@ -67,15 +77,40 @@ public class MovieService : IMovieService
         var directorId = movieCredits.Crew
                 .First(c => c.Job == _tmdbSettings.CrewJob).Id;
 
-        var directorDetails = await _movieApiIntegrationService.FetchDirectorDetailsAsync(directorId);
+        var directorDetails = await _movieApiIntegrationService
+            .FetchPersonDetailsAsync<DirectorDetailsResponse>(directorId);
         if (directorDetails == null)
         {
             return null;
         }
 
-        var existingDirector = await _unitOfWork.DirectorRepository.GetDirectorAsync(directorId);
+        await AddMovieWithDetails(movieId, movieDetails, directorId, directorDetails, movieCredits);
 
-        await _unitOfWork.CreateTransactionAsync();
+        var movieDetailsDTO = movieDetails.ToMovieDetailsDTO(
+            movieCredits.Cast.Take(_tmdbSettings.NumberOfActors),
+            directorDetails.Name);
+
+        return movieDetailsDTO;
+    }
+
+    private async Task AddMovieWithDetails(
+        int movieId,
+        MovieDetailsResponse movieDetails,
+        int directorId,
+        DirectorDetailsResponse directorDetails,
+        MovieCreditsResponse movieCredits)
+    {
+        await AddDirector(directorId, directorDetails);
+        await AddMovie(movieId, movieDetails, directorId);
+        await AddGenres(movieId, movieDetails);
+        await AddActorsAndRoles(movieId, movieCredits);
+
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task AddDirector(int directorId, DirectorDetailsResponse directorDetails)
+    {
+        var existingDirector = await _unitOfWork.DirectorRepository.GetDirectorAsync(directorId);
         if (existingDirector == null)
         {
             var newDirector = new Director
@@ -87,7 +122,10 @@ public class MovieService : IMovieService
             };
             await _unitOfWork.DirectorRepository.AddDirectorAsync(newDirector);
         }
+    }
 
+    private async Task AddMovie(int movieId, MovieDetailsResponse movieDetails, int directorId)
+    {
         var newMovie = new Movie
         {
             Id = movieId,
@@ -100,7 +138,10 @@ public class MovieService : IMovieService
             AverageRating = movieDetails.AverageRating
         };
         await _unitOfWork.MovieRepository.AddMovieAsync(newMovie);
+    }
 
+    private async Task AddGenres(int movieId, MovieDetailsResponse movieDetails)
+    {
         var genreIds = movieDetails.Genres.Select(genre => genre.Id).ToList();
         var existingGenres = await _unitOfWork.GenreRepository.GetGenresAsync(genreIds);
 
@@ -108,20 +149,40 @@ public class MovieService : IMovieService
             .Where(genre => !existingGenres.Any(existing => existing.Id == genre.Id))
             .Select(genre => new Genre { Id = genre.Id, Name = genre.Name })
             .ToList();
-        
+
         if (missingGenres.Any())
         {
             await _unitOfWork.GenreRepository.AddGenresAsync(missingGenres);
         }
 
         await _unitOfWork.MovieRepository.AddMovieGenresAsync(movieId, genreIds);
-        await _unitOfWork.SaveAsync();
-        await _unitOfWork.CommitTransactionAsync();
+    }
 
-        var movieDetailsDTO = movieDetails.ToMovieDetailsDTO(
-            movieCredits.Cast.Take(_tmdbSettings.NumberOfActors),
-            directorDetails.Name);
+    private async Task AddActorsAndRoles(int movieId, MovieCreditsResponse movieCredits)
+    {
+        var fetchedActors = movieCredits.Cast.Take(_tmdbSettings.NumberOfActors);
+        var actorsWithRoles = fetchedActors
+            .Select(actor => (ActorId: actor.Id, Role: actor.Character))
+            .ToList();
 
-        return movieDetailsDTO;
+        var existingActors = await _unitOfWork.ActorRepository
+            .GetActorsAsync(actorsWithRoles.Select(a => a.ActorId).ToList());
+
+        var missingActors = fetchedActors
+            .Where(actor => !existingActors.Any(existing => existing.Id == actor.Id))
+            .Select(actor => new Actor
+            {
+                Id = actor.Id,
+                Name = actor.Name,
+                ProfilePath = PhotoPathGenerator.GeneratePosterPath(actor.ProfilePath)
+            })
+            .ToList();
+
+        if (missingActors.Any())
+        {
+            await _unitOfWork.ActorRepository.AddActorsAsync(missingActors);
+        }
+
+        await _unitOfWork.MovieRepository.AddMovieActorsAsync(movieId, actorsWithRoles);
     }
 }

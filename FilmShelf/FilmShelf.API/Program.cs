@@ -107,12 +107,14 @@ builder.Services.AddTransient<IAccountService, AccountService>();
 builder.Services.AddTransient<ITokenService, JwtService>();
 builder.Services.AddTMDbClient();
 builder.Services.AddTransient<IMovieService, MovieService>();
+builder.Services.AddTransient<IActorService, ActorService>();
 builder.Services.AddTransient<IMoviePageService, MoviePageService>();
 builder.Services.AddTransient<IMoviePageRepository, MoviePageRepository>();
 builder.Services.AddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
 builder.Services.AddTransient<IDirectorRepository, DirectorRepository>();
 builder.Services.AddTransient<IGenreRepository, GenreRepository>();
+builder.Services.AddTransient<IActorRepository, ActorRepository>();
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHostedService<SyncBackgroundService>();
 builder.Services.AddSingleton(provider =>
