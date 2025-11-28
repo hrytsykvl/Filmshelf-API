@@ -1,6 +1,5 @@
 ﻿using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
-using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,12 +7,12 @@ namespace FilmShelf.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class MoviesController : ControllerBase
+public class MovieController : ControllerBase
 {
     private readonly IMovieService _movieService;
     private readonly IMoviePageService _moviePageService;
 
-    public MoviesController(
+    public MovieController(
         IMovieService movieService,
         IMoviePageService moviePageService)
     {

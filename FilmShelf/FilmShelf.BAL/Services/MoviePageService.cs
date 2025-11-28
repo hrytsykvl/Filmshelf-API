@@ -88,8 +88,6 @@ public class MoviePageService : IMoviePageService
 
         var existingPage = await _unitOfWork.MoviePageRepository.GetPageAsync(moviePage.PageNumber);
 
-        await _unitOfWork.CreateTransactionAsync();
-
         if (existingPage != null)
         {
             _unitOfWork.MoviePageRepository.UpdatePage(existingPage, moviePage);
@@ -100,7 +98,6 @@ public class MoviePageService : IMoviePageService
         }
 
         await _unitOfWork.SaveAsync();
-        await _unitOfWork.CommitTransactionAsync();
         return moviePage;
     }
 

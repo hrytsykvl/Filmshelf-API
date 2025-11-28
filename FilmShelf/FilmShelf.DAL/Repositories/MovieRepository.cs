@@ -18,6 +18,8 @@ public class MovieRepository : IMovieRepository
     {
         return await _context.Movies
             .Include(m => m.Director)
+            .Include(m => m.MovieActors)
+            .ThenInclude(ma => ma.Actor)
             .Include(m => m.MovieGenres)
             .ThenInclude(mg => mg.Genre)
             .SingleOrDefaultAsync(m => m.Id == movieId);
@@ -37,5 +39,17 @@ public class MovieRepository : IMovieRepository
         }).ToList();
 
         await _context.MovieGenres.AddRangeAsync(movieGenres);
+    }
+
+    public async Task AddMovieActorsAsync(int movieId, List<(int ActorId, string Role)> actorsWithRoles)
+    {
+        var movieActors = actorsWithRoles.Select(actorWithRole => new MovieActor
+        {
+            MovieId = movieId,
+            ActorId = actorWithRole.ActorId,
+            Role = actorWithRole.Role
+        }).ToList();
+
+        await _context.MovieActors.AddRangeAsync(movieActors);
     }
 }

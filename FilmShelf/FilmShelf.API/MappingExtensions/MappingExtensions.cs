@@ -109,6 +109,31 @@ public static class MappingExtensions
         };
     }
 
+    public static ActorDetailsResponseVM ToActorDetailsResponseVM(
+        this ActorDetailsDTO actorDetailsDTO)
+    {
+        return new ActorDetailsResponseVM
+        {
+            Name = actorDetailsDTO.Name,
+            Bio = actorDetailsDTO.Bio,
+            BirthDate = actorDetailsDTO.BirthDate,
+            ProfilePath = actorDetailsDTO.ProfilePath,
+            Movies = actorDetailsDTO.Movies.Select(m => m.ToActorMoviesVM()).ToList()
+        };
+    }
+
+    private static ActorMoviesVM ToActorMoviesVM(
+        this ActorMoviesDTO actorMoviesDTO)
+    {
+        return new ActorMoviesVM
+        {
+            Id = actorMoviesDTO.Id,
+            Title = actorMoviesDTO.Title,
+            PosterPath = actorMoviesDTO.PosterPath,
+            Role = actorMoviesDTO.Role
+        };
+    }
+
     private static CastMemberVM ToCastMemberVM(
         this CastMemberDTO castMemberDTO)
     {

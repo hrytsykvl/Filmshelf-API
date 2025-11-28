@@ -6,6 +6,6 @@ public interface IMovieApiIntegrationService
 {
     Task<MovieDetailsResponse?> FetchMovieDetailsAsync(int movieId);
     Task<MovieCreditsResponse?> FetchMovieCreditsAsync(int movieId);
-    Task<DirectorDetailsResponse?> FetchDirectorDetailsAsync(int directorId);
+    Task<T?> FetchPersonDetailsAsync<T>(int personId);
     Task<string?> FetchMoviesPageAsync(int pageNumber);
 }

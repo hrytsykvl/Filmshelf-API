@@ -5,8 +5,7 @@ public interface IUnitOfWork
     IDirectorRepository DirectorRepository {  get; }
     IGenreRepository GenreRepository { get; }
     IMovieRepository MovieRepository { get; }
+    IActorRepository ActorRepository { get; }
     IMoviePageRepository MoviePageRepository { get; }
-    Task CreateTransactionAsync();
-    Task CommitTransactionAsync();
     Task SaveAsync();
 }
