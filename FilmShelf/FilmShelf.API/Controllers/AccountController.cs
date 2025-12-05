@@ -1,6 +1,8 @@
 ﻿using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
+using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
+using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

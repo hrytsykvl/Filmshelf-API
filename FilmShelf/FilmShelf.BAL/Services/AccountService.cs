@@ -5,6 +5,8 @@ using FilmShelf.DAL.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using FilmShelf.BAL.Exceptions;
+using FilmShelf.BAL.Options;
+using Microsoft.Extensions.Options;
 
 namespace FilmShelf.BAL.Services;
 
@@ -13,23 +15,28 @@ public class AccountService : IAccountService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ITokenService _jwtService;
     private readonly IEmailService _emailService;
+    private readonly IWatchlistService _watchlistService;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly WatchlistSettings _watchlistSettings;
 
     public AccountService(
         UserManager<ApplicationUser> userManager,
         ITokenService jwtService,
         IEmailService emailService,
-        IRefreshTokenRepository refreshTokenRepository)
+        IWatchlistService watchlistService,
+        IRefreshTokenRepository refreshTokenRepository,
+        IOptions<WatchlistSettings> watchlistSettings)
     {
         _userManager = userManager;
         _jwtService = jwtService;
+        _watchlistService = watchlistService;
         _refreshTokenRepository = refreshTokenRepository;
         _emailService = emailService;
+        _watchlistSettings = watchlistSettings.Value;
     }
 
     public async Task<AuthenticationResponseDTO> RegisterUserAsync(RegisterDTO registerDTO)
     {
-
         var emailExists = _userManager.Users.Any(u => u.Email == registerDTO.Email);
         if (emailExists)
         {
@@ -74,6 +81,11 @@ public class AccountService : IAccountService
             UserId = user.Id
         };
         await _refreshTokenRepository.AddRefreshTokenAsync(newRefreshToken);
+
+        await _watchlistService.CreateWatchlistAsync(
+            user.Id,
+            _watchlistSettings.DefaultName,
+            true);
 
         return authenticationResponse;
     }

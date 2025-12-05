@@ -15,7 +15,8 @@ public class FilmsDbContext : IdentityDbContext<ApplicationUser, ApplicationRole
     public DbSet<Actor> Actors { get; set; }
     public DbSet<MovieActor> MovieActors { get; set; }
     public DbSet<MovieGenre> MovieGenres { get; set; }
-    public DbSet<Watchlist> Watchlists { get; set; }
+    public DbSet<UserWatchlist> Watchlists { get; set; }
+    public DbSet<WatchlistMovie> WatchlistMovies { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public FilmsDbContext(DbContextOptions<FilmsDbContext> options) : base(options)

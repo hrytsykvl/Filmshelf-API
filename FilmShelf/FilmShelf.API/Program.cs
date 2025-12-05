@@ -102,12 +102,14 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<MailJetSettings>(builder.Configuration.GetSection("MailJet"));
 builder.Services.Configure<TmdbSettings>(builder.Configuration.GetSection("TmdbSettings"));
+builder.Services.Configure<WatchlistSettings>(builder.Configuration.GetSection("Watchlist"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IAccountService, AccountService>();
 builder.Services.AddTransient<ITokenService, JwtService>();
 builder.Services.AddTMDbClient();
 builder.Services.AddTransient<IMovieService, MovieService>();
 builder.Services.AddTransient<IActorService, ActorService>();
+builder.Services.AddTransient<IWatchlistService, WatchlistService>();
 builder.Services.AddTransient<IMoviePageService, MoviePageService>();
 builder.Services.AddTransient<IMoviePageRepository, MoviePageRepository>();
 builder.Services.AddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -152,7 +154,8 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+        ClockSkew = TimeSpan.Zero
     };
 });
 
