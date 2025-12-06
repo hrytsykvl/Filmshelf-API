@@ -17,7 +17,7 @@ public class Movie
 
     public Director Director { get; set; } = null!;
     public List<Review> Reviews { get; set; } = new List<Review>();
-    public List<Watchlist> Watchlists { get; set; } = new List<Watchlist>();
+    public List<WatchlistMovie> WatchlistMovies { get; set; } = new List<WatchlistMovie>();
     public List<MovieActor> MovieActors { get; set; } = new List<MovieActor>();
     public List<MovieGenre> MovieGenres { get; set; } = new List<MovieGenre>();
 }

@@ -4,6 +4,7 @@ using FilmShelf.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FilmShelf.DAL.Migrations
 {
     [DbContext(typeof(FilmsDbContext))]
-    partial class FilmsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241206144932_UpdateWatchlistStructure")]
+    partial class UpdateWatchlistStructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,7 +231,7 @@ namespace FilmShelf.DAL.Migrations
                     b.ToTable("Reviews");
                 });
 
-            modelBuilder.Entity("FilmShelf.DAL.Entities.UserWatchlist", b =>
+            modelBuilder.Entity("FilmShelf.DAL.Entities.Watchlist", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -236,20 +239,16 @@ namespace FilmShelf.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Watchlists");
                 });
@@ -566,11 +565,11 @@ namespace FilmShelf.DAL.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FilmShelf.DAL.Entities.UserWatchlist", b =>
+            modelBuilder.Entity("FilmShelf.DAL.Entities.Watchlist", b =>
                 {
                     b.HasOne("FilmShelf.DAL.Identity.ApplicationUser", "User")
-                        .WithMany("Watchlists")
-                        .HasForeignKey("UserId")
+                        .WithOne("Watchlist")
+                        .HasForeignKey("FilmShelf.DAL.Entities.Watchlist", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -585,7 +584,7 @@ namespace FilmShelf.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FilmShelf.DAL.Entities.UserWatchlist", "Watchlist")
+                    b.HasOne("FilmShelf.DAL.Entities.Watchlist", "Watchlist")
                         .WithMany("WatchlistMovies")
                         .HasForeignKey("WatchlistId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -684,7 +683,7 @@ namespace FilmShelf.DAL.Migrations
                     b.Navigation("WatchlistMovies");
                 });
 
-            modelBuilder.Entity("FilmShelf.DAL.Entities.UserWatchlist", b =>
+            modelBuilder.Entity("FilmShelf.DAL.Entities.Watchlist", b =>
                 {
                     b.Navigation("WatchlistMovies");
                 });
@@ -695,7 +694,8 @@ namespace FilmShelf.DAL.Migrations
 
                     b.Navigation("Reviews");
 
-                    b.Navigation("Watchlists");
+                    b.Navigation("Watchlist")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

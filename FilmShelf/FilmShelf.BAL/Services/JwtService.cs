@@ -48,7 +48,7 @@ public class JwtService : ITokenService
         {
             Token = token,
             RefreshToken = GenerateRefreshToken(),
-            RefreshTokenExpirationDate = DateTime.UtcNow.AddMinutes(Convert.ToInt32(_jwtSettings.RefreshTokenExpirationMinutes))
+            RefreshTokenExpirationDate = DateTime.UtcNow.AddHours(Convert.ToInt32(_jwtSettings.RefreshTokenExpirationHours))
         };
     }
 

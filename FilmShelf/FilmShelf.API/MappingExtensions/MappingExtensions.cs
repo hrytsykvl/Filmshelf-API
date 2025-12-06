@@ -122,6 +122,41 @@ public static class MappingExtensions
         };
     }
 
+    public static WatchlistVM ToWatchlistVM(
+        this WatchlistDTO watchlistDTO)
+    {
+        return new WatchlistVM
+        {
+            Id = watchlistDTO.Id,
+            Movies = watchlistDTO.Movies.Select(m => m.ToWatchlistMovieVM()).ToList(),
+            Title = watchlistDTO.Title,
+            TotalMovies = watchlistDTO.TotalMovies,
+            UpdatedAt = watchlistDTO.UpdatedAt
+        };
+    }
+
+    public static WatchlistCheckVM ToWatchlistCheckVM(
+        this WatchlistCheckDTO watchlistCheckDTO)
+    {
+        return new WatchlistCheckVM
+        {
+            WatchlistId = watchlistCheckDTO.WatchlistId,
+            MovieIds = new List<int>(watchlistCheckDTO.MovieIds)
+        };
+    }
+
+    private static WatchlistMovieVM ToWatchlistMovieVM(
+        this WatchlistMovieDTO watchlistMovieDTO)
+    {
+        return new WatchlistMovieVM
+        {
+            Id = watchlistMovieDTO.Id,
+            Title = watchlistMovieDTO.Title,
+            PosterPath = watchlistMovieDTO.PosterPath,
+            AverageRating = watchlistMovieDTO.AverageRating
+        };
+    }
+
     private static ActorMoviesVM ToActorMoviesVM(
         this ActorMoviesDTO actorMoviesDTO)
     {
