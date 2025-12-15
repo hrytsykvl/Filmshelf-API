@@ -14,7 +14,7 @@ public class WatchlistService : IWatchlistService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task CreateWatchlistAsync(
+    public async Task<int> CreateWatchlistAsync(
         int userId,
         string title,
         bool isDefault = false)
@@ -28,6 +28,8 @@ public class WatchlistService : IWatchlistService
 
         await _unitOfWork.WatchlistRepository.CreateWatchlistAsync(watchlist);
         await _unitOfWork.SaveAsync();
+
+        return watchlist.Id;
     }
 
     public async Task AddMovieToWatchlistAsync(int watchlistId, int movieId)
@@ -71,16 +73,18 @@ public class WatchlistService : IWatchlistService
         };
     }
 
-    public async Task<WatchlistCheckDTO> GetDefaultWatchlistMoviesAsync(int userId)
+    public async Task<List<WatchlistCheckDTO>> GetWatchlistMoviesAsync(int userId)
     {
-        var (watchlistId, movieIds) = await _unitOfWork.WatchlistRepository
-            .GetDefaultWatchlistMoviesAsync(userId);
+        var userWatchlists = await _unitOfWork.WatchlistRepository
+            .GetAllWatchlistMoviesAsync(userId);
 
-        return new WatchlistCheckDTO
-        {
-            WatchlistId = watchlistId,
-            MovieIds = movieIds
-        };
+        return userWatchlists
+            .Select(w => new WatchlistCheckDTO
+            {
+                WatchlistId = w.WatchlistId,
+                Title = w.Title,
+                MovieIds = w.MovieIds
+            }).ToList();
     }
 
     public async Task DeleteWatchlistAsync(int watchlistId)
@@ -91,10 +95,18 @@ public class WatchlistService : IWatchlistService
         await _unitOfWork.SaveAsync();
     }
 
-    public async Task RemoveFromWatchlistAsync(int watchlistId, int movieId)
+    public async Task RemoveMovieFromWatchlistAsync(int watchlistId, int movieId)
     {
         await _unitOfWork.WatchlistRepository
             .RemoveMovieFromWatchlistAsync(watchlistId, movieId);
+
+        await _unitOfWork.SaveAsync();
+    }
+
+    public async Task UpdateWatchlistAsync(int watchlistId, string title)
+    {
+        await _unitOfWork.WatchlistRepository
+            .UpdateWatchlistAsync(watchlistId, title);
 
         await _unitOfWork.SaveAsync();
     }

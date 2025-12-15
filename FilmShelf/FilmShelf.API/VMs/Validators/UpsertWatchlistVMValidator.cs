@@ -2,9 +2,9 @@
 
 namespace FilmShelf.API.VMs.Validators;
 
-public class CreateWatchlistVMValidator : AbstractValidator<CreateWatchlistVM>
+public class UpsertWatchlistVMValidator : AbstractValidator<UpsertWatchlistVM>
 {
-    public CreateWatchlistVMValidator()
+    public UpsertWatchlistVMValidator()
     {
         RuleFor(x => x.Title)
             .NotEmpty()

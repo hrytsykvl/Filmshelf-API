@@ -19,6 +19,45 @@ public class WatchlistController : ControllerBase
         _watchlistService = watchlistService;
     }
 
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateWatchlist([FromBody] UpsertWatchlistVM upsertWatchlistVM)
+    {
+        var userId = UserClaimsHelper.GetUserId(User);
+
+        var createdWatchlistId = await _watchlistService.CreateWatchlistAsync(
+            userId,
+            upsertWatchlistVM.Title);
+
+        return CreatedAtAction(
+            nameof(RetrieveWatchlist),
+            new { id = createdWatchlistId },
+            createdWatchlistId);
+    }
+
+    [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateWatchlist(
+        WatchlistRequestVM watchlistRequestVM,
+        [FromBody] UpsertWatchlistVM upsertWatchlistVM)
+    {
+        await _watchlistService.UpdateWatchlistAsync(
+            watchlistRequestVM.WatchlistId,
+            upsertWatchlistVM.Title);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteWatchlist(WatchlistRequestVM watchlistRequestVM)
+    {
+        await _watchlistService
+            .DeleteWatchlistAsync(watchlistRequestVM.WatchlistId);
+
+        return NoContent();
+    }
+
     [HttpPut("{watchlistId}/movies/{movieId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> AddMovieToWatchlist(WatchlistAddVM watchlistAddVM)
@@ -54,23 +93,23 @@ public class WatchlistController : ControllerBase
     {
         var userId = UserClaimsHelper.GetUserId(User);
 
-        await _watchlistService.RemoveFromWatchlistAsync(
+        await _watchlistService.RemoveMovieFromWatchlistAsync(
             watchlistActionVM.WatchlistId,
             watchlistActionVM.MovieId);
 
         return NoContent();
     }
 
-    [HttpGet("default/movies")]
-    [ProducesResponseType(typeof(WatchlistCheckVM), StatusCodes.Status200OK)]
-    public async Task<IActionResult> MoviesInDefaultWatchlist()
+    [HttpGet("movies")]
+    [ProducesResponseType(typeof(IEnumerable<WatchlistCheckVM>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> MoviesInWatchlists()
     {
         var userId = UserClaimsHelper.GetUserId(User);
-        var watchlistCheckDTO = await _watchlistService
-            .GetDefaultWatchlistMoviesAsync(userId);
+        var watchlistCheckDTOs = await _watchlistService
+            .GetWatchlistMoviesAsync(userId);
 
-        var watchlistCheckVM = watchlistCheckDTO.ToWatchlistCheckVM();
+        var watchlistCheckVMs = watchlistCheckDTOs.ToWatchlistCheckVMs();
 
-        return Ok(watchlistCheckVM);
+        return Ok(watchlistCheckVMs);
     }
 }

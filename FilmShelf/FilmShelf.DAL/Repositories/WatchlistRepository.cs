@@ -19,21 +19,24 @@ public class WatchlistRepository : IWatchlistRepository
         await _context.WatchlistMovies.AddAsync(watchlistMovie);
     }
 
-    public async Task<(int WatchlistId, List<int> MovieIds)> GetDefaultWatchlistMoviesAsync(int userId)
+    public async Task<List<(int WatchlistId, string Title, List<int> MovieIds)>> GetAllWatchlistMoviesAsync(int userId)
     {
-        var watchlist = await _context.Watchlists
+        var watchlists = await _context.Watchlists
             .Include(w => w.WatchlistMovies)
-            .Where(w => w.IsDefault && w.UserId == userId)
+            .Where(w => w.UserId == userId)
             .Select(w => new
             {
                 WatchlistId = w.Id,
+                Title = w.Title,
                 MovieIds = w.WatchlistMovies
                     .Select(wm => wm.MovieId)
                     .ToList()
             })
-            .FirstAsync();
+            .ToListAsync();
 
-        return (watchlist.WatchlistId, watchlist.MovieIds);
+        return watchlists
+            .Select(w => (w.WatchlistId, w.Title, w.MovieIds))
+            .ToList();
     }
 
     public async Task<UserWatchlist?> GetWatchlistByIdAsync(int watchlistId)
@@ -67,5 +70,13 @@ public class WatchlistRepository : IWatchlistRepository
         await _context.Watchlists
             .Where(w => w.Id == watchlistId)
             .ExecuteDeleteAsync();
+    }
+
+    public async Task UpdateWatchlistAsync(int watchlistId, string title)
+    {
+        await _context.Watchlists
+            .Where(w => w.Id == watchlistId)
+            .ExecuteUpdateAsync(w => w
+                .SetProperty(t => t.Title, title));
     }
 }
