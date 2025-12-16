@@ -4,10 +4,11 @@ namespace FilmShelf.BAL.Interfaces;
 
 public interface IWatchlistService
 {
-    Task CreateWatchlistAsync(int userId, string title, bool isDefault = false);
+    Task<int> CreateWatchlistAsync(int userId, string title, bool isDefault = false);
     Task AddMovieToWatchlistAsync(int watchlistId, int movieId);
     Task<WatchlistDTO?> GetWatchlistByIdAsync(int watchlistId);
-    Task<WatchlistCheckDTO> GetDefaultWatchlistMoviesAsync(int userId);
+    Task<List<WatchlistCheckDTO>> GetWatchlistMoviesAsync(int userId);
     Task DeleteWatchlistAsync(int watchlistId);
-    Task RemoveFromWatchlistAsync(int watchlistId, int movieId);
+    Task RemoveMovieFromWatchlistAsync(int watchlistId, int movieId);
+    Task UpdateWatchlistAsync(int watchlistId, string title);
 }

@@ -1,6 +1,6 @@
 ﻿namespace FilmShelf.API.VMs;
 
-public class CreateWatchlistVM
+public class UpsertWatchlistVM
 {
     public string Title { get; set; } = null!;
 }

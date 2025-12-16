@@ -135,14 +135,15 @@ public static class MappingExtensions
         };
     }
 
-    public static WatchlistCheckVM ToWatchlistCheckVM(
-        this WatchlistCheckDTO watchlistCheckDTO)
+    public static List<WatchlistCheckVM> ToWatchlistCheckVMs(
+        this List<WatchlistCheckDTO> watchlistCheckDTOs)
     {
-        return new WatchlistCheckVM
+        return watchlistCheckDTOs.Select(dto => new WatchlistCheckVM
         {
-            WatchlistId = watchlistCheckDTO.WatchlistId,
-            MovieIds = new List<int>(watchlistCheckDTO.MovieIds)
-        };
+            WatchlistId = dto.WatchlistId,
+            Title = dto.Title,
+            MovieIds = new List<int>(dto.MovieIds)
+        }).ToList();
     }
 
     private static WatchlistMovieVM ToWatchlistMovieVM(
