@@ -15,6 +15,7 @@ public class UnitOfWork : IUnitOfWork
     public IActorRepository ActorRepository { get; private set; }
     public IMoviePageRepository MoviePageRepository { get; private set; }
     public IWatchlistRepository WatchlistRepository { get; private set; }
+    public IReviewRepository ReviewRepository { get; private set; }
 
     public UnitOfWork(FilmsDbContext context)
     {
@@ -25,6 +26,7 @@ public class UnitOfWork : IUnitOfWork
         ActorRepository = new ActorRepository(_context);
         MoviePageRepository = new MoviePageRepository(_context);
         WatchlistRepository = new WatchlistRepository(_context);
+        ReviewRepository = new ReviewRepository(_context);
     }
 
     public async Task SaveAsync()

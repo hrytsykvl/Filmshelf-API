@@ -16,4 +16,5 @@ public class Review
 
     public ApplicationUser User { get; set; } = null!;
     public Movie Movie { get; set; } = null!;
+    public List<ReviewResponse> ReviewResponses { get; set; } = new List<ReviewResponse>();
 }
