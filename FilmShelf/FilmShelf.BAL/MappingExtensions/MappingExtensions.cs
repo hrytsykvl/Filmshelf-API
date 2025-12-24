@@ -55,4 +55,43 @@ public static class MappingExtensions
                 .ToList()
         };
     }
+
+    public static ReviewDTO ToReviewDTO(
+        this Review review)
+    {
+        return new ReviewDTO
+        {
+            Id = review.Id,
+            Content = review.Content,
+            Rating = review.Rating,
+            CreatedAt = review.CreatedAt,
+            UserId = review.UserId,
+            MovieId = review.MovieId,
+            UserName = review.User.UserName ?? string.Empty,
+            MovieTitle = review.Movie.Title,
+            Responses = review.ReviewResponses?.Select(r => new ReviewResponseDTO
+            {
+                Id = r.Id,
+                ReviewId = r.ReviewId,
+                UserId = r.UserId,
+                Content = r.Content,
+                CreatedAt = r.CreatedAt,
+                UserName = r.User?.UserName ?? string.Empty
+            }).ToList() ?? new ()
+        };
+    }
+
+    public static ReviewResponseDTO ToReviewResponseDTO(
+        this ReviewResponse reviewResponse)
+    {
+        return new ReviewResponseDTO
+        {
+            Id = reviewResponse.Id,
+            ReviewId = reviewResponse.ReviewId,
+            UserId = reviewResponse.UserId,
+            Content = reviewResponse.Content,
+            CreatedAt = reviewResponse.CreatedAt,
+            UserName = reviewResponse.User.UserName ?? string.Empty
+        };
+    }
 }

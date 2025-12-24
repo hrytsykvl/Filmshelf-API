@@ -111,12 +111,15 @@ builder.Services.AddTransient<IMovieService, MovieService>();
 builder.Services.AddTransient<IActorService, ActorService>();
 builder.Services.AddTransient<IWatchlistService, WatchlistService>();
 builder.Services.AddTransient<IMoviePageService, MoviePageService>();
+builder.Services.AddTransient<IReviewService, ReviewService>();
 builder.Services.AddTransient<IMoviePageRepository, MoviePageRepository>();
 builder.Services.AddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
 builder.Services.AddTransient<IDirectorRepository, DirectorRepository>();
 builder.Services.AddTransient<IGenreRepository, GenreRepository>();
 builder.Services.AddTransient<IActorRepository, ActorRepository>();
+builder.Services.AddTransient<IWatchlistRepository, WatchlistRepository>();
+builder.Services.AddTransient<IReviewRepository, ReviewRepository>();
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHostedService<SyncBackgroundService>();
 builder.Services.AddSingleton(provider =>

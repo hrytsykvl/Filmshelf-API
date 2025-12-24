@@ -146,6 +146,65 @@ public static class MappingExtensions
         }).ToList();
     }
 
+    public static ReviewAddDTO ToReviewAddDTO(
+        this ReviewAddVM reviewAddVM,
+        int userId)
+    {
+        return new ReviewAddDTO
+        {
+            Content = reviewAddVM.Content,
+            Rating = reviewAddVM.Rating,
+            UserId = userId,
+            MovieId = reviewAddVM.MovieId
+        };
+    }
+
+    public static ReviewVM ToReviewVM(
+        this ReviewDTO reviewDTO)
+    {
+        return new ReviewVM
+        {
+            Id = reviewDTO.Id,
+            Content = reviewDTO.Content,
+            Rating = reviewDTO.Rating,
+            CreatedAt = reviewDTO.CreatedAt,
+            UserId = reviewDTO.UserId,
+            MovieId = reviewDTO.MovieId,
+            UserName = reviewDTO.UserName,
+            MovieTitle = reviewDTO.MovieTitle,
+            Responses = reviewDTO.Responses
+                .Select(r => r.ToReviewResponseVM())
+                .ToList()
+        };
+    }
+
+    public static ReviewResponseAddDTO ToReviewResponseAddDTO(
+        this ReviewResponseAddVM reviewResponseAddVM,
+        int reviewId,
+        int userId)
+    {
+        return new ReviewResponseAddDTO
+        {
+            Content = reviewResponseAddVM.Content,
+            ReviewId = reviewId,
+            UserId = userId
+        };
+    }
+
+    public static ReviewResponseVM ToReviewResponseVM(
+        this ReviewResponseDTO reviewResponseDTO)
+    {
+        return new ReviewResponseVM
+        {
+            Id = reviewResponseDTO.Id,
+            ReviewId = reviewResponseDTO.ReviewId,
+            Content = reviewResponseDTO.Content,
+            CreatedAt = reviewResponseDTO.CreatedAt,
+            UserId = reviewResponseDTO.UserId,
+            UserName = reviewResponseDTO.UserName
+        };
+    }
+
     private static WatchlistMovieVM ToWatchlistMovieVM(
         this WatchlistMovieDTO watchlistMovieDTO)
     {

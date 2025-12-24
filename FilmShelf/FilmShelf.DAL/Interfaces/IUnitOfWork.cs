@@ -8,5 +8,6 @@ public interface IUnitOfWork
     IActorRepository ActorRepository { get; }
     IMoviePageRepository MoviePageRepository { get; }
     IWatchlistRepository WatchlistRepository { get; }
+    IReviewRepository ReviewRepository { get; }
     Task SaveAsync();
 }

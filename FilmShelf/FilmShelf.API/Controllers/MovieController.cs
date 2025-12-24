@@ -11,13 +11,16 @@ public class MovieController : ControllerBase
 {
     private readonly IMovieService _movieService;
     private readonly IMoviePageService _moviePageService;
+    private readonly IReviewService _reviewService;
 
     public MovieController(
         IMovieService movieService,
-        IMoviePageService moviePageService)
+        IMoviePageService moviePageService,
+        IReviewService reviewService)
     {
         _movieService = movieService;
         _moviePageService = moviePageService;
+        _reviewService = reviewService;
     }
 
     [HttpGet("{id}")]
@@ -46,5 +49,18 @@ public class MovieController : ControllerBase
         var movieListResponseVM = movies.ToMovieListResponseVM(totalPages);
 
         return Ok(movieListResponseVM);
+    }
+
+    [HttpGet("{movieId}/reviews")]
+    [ProducesResponseType(typeof(IEnumerable<ReviewVM>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RetrieveReviewsByMovieId(ReviewsForMovieVM reviewsForMovieVM)
+    {
+        var reviewDTOs = await _reviewService
+            .GetReviewsByMovieIdAsync(reviewsForMovieVM.MovieId);
+
+        var reviewVMs = reviewDTOs
+            .Select(r => r.ToReviewVM());
+
+        return Ok(reviewVMs);
     }
 }

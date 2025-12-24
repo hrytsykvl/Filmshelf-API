@@ -14,11 +14,14 @@ public class AccountController : ControllerBase
 {
     private readonly ILogger<AccountController> _logger;
     private readonly IAccountService _accountService;
+    private readonly IReviewService _reviewService;
 
     public AccountController(IAccountService accountService,
+        IReviewService reviewService,
         ILogger<AccountController> logger)
     {
         _accountService = accountService;
+        _reviewService = reviewService;
         _logger = logger;
     }
 
@@ -103,5 +106,21 @@ public class AccountController : ControllerBase
 
         var passwordResponseVM = passwordResponse.ToPasswordResponseVM();
         return Ok(passwordResponseVM);
+    }
+
+    [HttpGet("reviews")]
+    [ProducesResponseType(typeof(IEnumerable<ReviewVM>), StatusCodes.Status200OK)]
+    [Authorize]
+    public async Task<IActionResult> RetrieveReviewsByUserId()
+    {
+        var userId = UserClaimsHelper.GetUserId(User);
+
+        var reviewDTOs = await _reviewService
+            .GetReviewsByUserIdAsync(userId);
+
+        var reviewVMs = reviewDTOs
+            .Select(r => r.ToReviewVM());
+
+        return Ok(reviewVMs);
     }
 }
