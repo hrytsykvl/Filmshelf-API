@@ -72,6 +72,7 @@ public class ReviewRepository : IReviewRepository
     {
         return await _context.ReviewResponses
             .Include(r => r.User)
+            .Include(r => r.Review)
             .FirstOrDefaultAsync(r => r.Id == responseId);
     }
 

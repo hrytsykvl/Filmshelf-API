@@ -12,4 +12,5 @@ public class ReviewResponse
 
     public ApplicationUser User { get; set; } = null!;
     public Review Review { get; set; } = null!;
+    public List<ReviewNotification> Notifications { get; set; } = new List<ReviewNotification>();
 }

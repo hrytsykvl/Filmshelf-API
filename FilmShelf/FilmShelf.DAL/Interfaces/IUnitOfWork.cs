@@ -9,5 +9,6 @@ public interface IUnitOfWork
     IMoviePageRepository MoviePageRepository { get; }
     IWatchlistRepository WatchlistRepository { get; }
     IReviewRepository ReviewRepository { get; }
+    INotificationRepository NotificationRepository { get; }
     Task SaveAsync();
 }

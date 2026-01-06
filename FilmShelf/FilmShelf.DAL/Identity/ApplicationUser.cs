@@ -9,4 +9,5 @@ public class ApplicationUser : IdentityUser<int>
     public List<UserWatchlist> Watchlists { get; set; } = new List<UserWatchlist>();
     public List<Review> Reviews { get; set; } = new List<Review>();
     public List<ReviewResponse> ReviewResponses { get; set; } = new List<ReviewResponse>();
+    public List<Notification> Notifications { get; set; } = new List<Notification>();
 }

@@ -15,7 +15,7 @@ public class ReviewService : IReviewService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<int> AddReviewAsync(ReviewAddDTO reviewAddDTO)
+    public async Task<ReviewDTO> AddReviewAsync(ReviewAddDTO reviewAddDTO)
     {
         var newReview = new Review
         {
@@ -30,7 +30,10 @@ public class ReviewService : IReviewService
             .AddReviewAsync(newReview);
         await _unitOfWork.SaveAsync();
 
-        return newReview.Id;
+        var createdReview = await _unitOfWork.ReviewRepository
+            .GetReviewByIdAsync(newReview.Id);
+
+        return createdReview!.ToReviewDTO();
     }
 
     public async Task DeleteReviewAsync(int reviewId)
@@ -80,7 +83,7 @@ public class ReviewService : IReviewService
         await _unitOfWork.SaveAsync();
     }
 
-    public async Task<int> AddReviewResponseAsync(ReviewResponseAddDTO reviewResponseAddDTO)
+    public async Task<ReviewResponseDTO> AddReviewResponseAsync(ReviewResponseAddDTO reviewResponseAddDTO)
     {
         var reviewResponse = new ReviewResponse
         {
@@ -94,7 +97,10 @@ public class ReviewService : IReviewService
             .AddReviewResponseAsync(reviewResponse);
         await _unitOfWork.SaveAsync();
 
-        return reviewResponse.Id;
+        var createdReviewResponse = await _unitOfWork.ReviewRepository
+            .GetResponseByIdAsync(reviewResponse.Id);
+
+        return createdReviewResponse!.ToReviewResponseDTO();
     }
 
     public async Task<List<ReviewResponseDTO>> GetReviewResponsesByReviewIdAsync(int reviewId)
