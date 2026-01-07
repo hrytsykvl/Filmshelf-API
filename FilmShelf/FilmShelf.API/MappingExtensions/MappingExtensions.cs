@@ -205,6 +205,22 @@ public static class MappingExtensions
         };
     }
 
+    public static ReviewNotificationVM ToReviewNotificationVM(
+        this ReviewNotificationDTO reviewNotificationDTO)
+    {
+        return new ReviewNotificationVM
+        {
+            Id = reviewNotificationDTO.Id,
+            CreatedAt = reviewNotificationDTO.CreatedAt,
+            IsRead = reviewNotificationDTO.IsRead,
+            UserId = reviewNotificationDTO.UserId,
+            MovieId = reviewNotificationDTO.MovieId,
+            MovieTitle = reviewNotificationDTO.MovieTitle,
+            MoviePoster = reviewNotificationDTO.MoviePoster,
+            ReviewResponse = reviewNotificationDTO.ReviewResponse.ToReviewResponseVM()
+        };
+    }
+
     private static WatchlistMovieVM ToWatchlistMovieVM(
         this WatchlistMovieDTO watchlistMovieDTO)
     {

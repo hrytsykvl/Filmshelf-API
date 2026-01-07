@@ -91,7 +91,24 @@ public static class MappingExtensions
             UserId = reviewResponse.UserId,
             Content = reviewResponse.Content,
             CreatedAt = reviewResponse.CreatedAt,
-            UserName = reviewResponse.User.UserName ?? string.Empty
+            UserName = reviewResponse.User.UserName ?? string.Empty,
+            ReceiverId = reviewResponse.Review.UserId
+        };
+    }
+
+    public static ReviewNotificationDTO ToReviewNotificationDTO(
+        this ReviewNotification reviewNotification)
+    {
+        return new ReviewNotificationDTO
+        {
+            Id = reviewNotification.Id,
+            CreatedAt = reviewNotification.CreatedAt,
+            IsRead = reviewNotification.IsRead,
+            UserId = reviewNotification.UserId,
+            MovieId = reviewNotification.ReviewResponse.Review.MovieId,
+            MovieTitle = reviewNotification.ReviewResponse.Review.Movie.Title,
+            MoviePoster = reviewNotification.ReviewResponse.Review.Movie.PosterPath,
+            ReviewResponse = reviewNotification.ReviewResponse.ToReviewResponseDTO()
         };
     }
 }

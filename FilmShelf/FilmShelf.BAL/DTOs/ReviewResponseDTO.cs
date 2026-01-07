@@ -7,5 +7,6 @@ public class ReviewResponseDTO
     public string Content { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public int UserId { get; set; }
+    public int ReceiverId { get; set; }
     public string UserName { get; set; } = null!;
 }

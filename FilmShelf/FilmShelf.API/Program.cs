@@ -25,6 +25,8 @@ using RestSharp;
 using Serilog;
 using System.Reflection;
 using System.Text;
+using FilmShelf.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -98,6 +100,8 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<MailJetSettings>(builder.Configuration.GetSection("MailJet"));
@@ -112,6 +116,7 @@ builder.Services.AddTransient<IActorService, ActorService>();
 builder.Services.AddTransient<IWatchlistService, WatchlistService>();
 builder.Services.AddTransient<IMoviePageService, MoviePageService>();
 builder.Services.AddTransient<IReviewService, ReviewService>();
+builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IMoviePageRepository, MoviePageRepository>();
 builder.Services.AddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
@@ -120,6 +125,7 @@ builder.Services.AddTransient<IGenreRepository, GenreRepository>();
 builder.Services.AddTransient<IActorRepository, ActorRepository>();
 builder.Services.AddTransient<IWatchlistRepository, WatchlistRepository>();
 builder.Services.AddTransient<IReviewRepository, ReviewRepository>();
+builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHostedService<SyncBackgroundService>();
 builder.Services.AddSingleton(provider =>
@@ -160,6 +166,22 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
         ClockSkew = TimeSpan.Zero
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/notification")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddCors(options =>
@@ -189,15 +211,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
 app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
 
-app.UseCors();
+app.UseRouting();
+app.UseCors(x => x.WithOrigins("http://localhost:4200")
+    .AllowCredentials()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/notification");
 
 app.Run();

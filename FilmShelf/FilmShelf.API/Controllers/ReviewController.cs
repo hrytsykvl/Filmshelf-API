@@ -1,10 +1,12 @@
-﻿using FilmShelf.API.MappingExtensions;
+﻿using FilmShelf.API.Hubs;
+using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
 using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FilmShelf.API.Controllers;
 
@@ -13,10 +15,17 @@ namespace FilmShelf.API.Controllers;
 public class ReviewController : ControllerBase
 {
     private readonly IReviewService _reviewService;
+    private readonly INotificationService _notificationService;
+    private readonly IHubContext<NotificationHub, INotificationHub> _hubContext;
 
-    public ReviewController(IReviewService reviewService)
+    public ReviewController(
+        IReviewService reviewService,
+        IHubContext<NotificationHub, INotificationHub> hubContext,
+        INotificationService notificationService)
     {
         _reviewService = reviewService;
+        _hubContext = hubContext;
+        _notificationService = notificationService;
     }
 
     [HttpPost]
@@ -27,11 +36,12 @@ public class ReviewController : ControllerBase
         var userId = UserClaimsHelper.GetUserId(User);
 
         var reviewAddDTO = reviewAddVM.ToReviewAddDTO(userId);
-        var reviewId = await _reviewService.AddReviewAsync(reviewAddDTO);
+        var createdReviewDTO = await _reviewService.AddReviewAsync(reviewAddDTO);
 
-        return RedirectToAction(
+        return CreatedAtAction(
             nameof(RetrieveReviewById),
-            new { id = reviewId });
+            new { id = createdReviewDTO.Id },
+            createdReviewDTO.ToReviewVM());
     }
 
     [HttpGet("{id}")]
@@ -90,12 +100,25 @@ public class ReviewController : ControllerBase
         var reviewResponseAddDTO = reviewResponseAddVM
             .ToReviewResponseAddDTO(reviewRequestVM.Id, userId);
 
-        var reviewResponseId = await _reviewService
+        var createdReviewResponseDTO = await _reviewService
             .AddReviewResponseAsync(reviewResponseAddDTO);
 
-        return RedirectToAction(
+        var notificationId = await _notificationService
+            .CreateReviewNotificationAsync(
+            createdReviewResponseDTO.ReceiverId,
+            createdReviewResponseDTO.Id);
+
+        var notification = await _notificationService
+            .GetReviewNotificationAsync(notificationId);
+
+        await _hubContext.Clients
+            .User(createdReviewResponseDTO.ReceiverId.ToString())
+            .ReceiveNotification(notification?.ToReviewNotificationVM()!);
+
+        return CreatedAtAction(
             nameof(RetrieveReviewResponseById),
-            new { id = reviewResponseId });
+            new { id = createdReviewResponseDTO.Id },
+            createdReviewResponseDTO.ToReviewResponseVM());
     }
 
     [HttpGet("responses/{id}")]
