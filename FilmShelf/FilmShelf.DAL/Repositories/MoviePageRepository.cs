@@ -1,5 +1,6 @@
 ﻿using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Entities;
+using FilmShelf.DAL.Enums;
 using FilmShelf.DAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,10 +15,15 @@ public class MoviePageRepository : IMoviePageRepository
         _context = context;
     }
 
-    public async Task<MoviePage?> GetPageAsync(int pageNumber)
+    public async Task<MoviePage?> GetPageAsync(
+        int? pageNumber = null,
+        MoviePageType? moviePageType = MoviePageType.Regular)
     {
+        var pageToFind = pageNumber ?? 1;
+
         return await _context.MoviePages
-            .SingleOrDefaultAsync(p => p.PageNumber == pageNumber);
+            .FirstOrDefaultAsync(p => p.PageNumber == pageToFind
+                                     && p.Type == moviePageType);
     }
 
     public async Task AddPageAsync(MoviePage page)

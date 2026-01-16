@@ -1,5 +1,6 @@
 ﻿using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
+using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -20,19 +21,19 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(List<ReviewNotificationVM>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> RetrieveReviewNotifications()
+    [ProducesResponseType(typeof(List<NotificationVM>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RetrieveAllNotifications()
     {
         var userId = UserClaimsHelper.GetUserId(User);
 
-        var reviewNotificationsDTO = await _notificationService
-            .GetReviewNotificationsAsync(userId);
+        var notificationsDTO = await _notificationService
+            .GetAllNotificationsAsync(userId);
 
-        var reviewNotificationsVM = reviewNotificationsDTO
-            .Select(rn => rn.ToReviewNotificationVM())
+        var notificationsVM = notificationsDTO
+            .Select(dto => dto.ToNotificationVM())
             .ToList();
 
-        return Ok(reviewNotificationsVM);
+        return Ok(notificationsVM);
     }
 
     [HttpGet("unread")]

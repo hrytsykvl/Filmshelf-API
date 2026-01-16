@@ -96,10 +96,10 @@ public static class MappingExtensions
         };
     }
 
-    public static ReviewNotificationDTO ToReviewNotificationDTO(
+    public static NotificationDTO ToNotificationDTO(
         this ReviewNotification reviewNotification)
     {
-        return new ReviewNotificationDTO
+        return new NotificationDTO
         {
             Id = reviewNotification.Id,
             CreatedAt = reviewNotification.CreatedAt,
@@ -109,6 +109,17 @@ public static class MappingExtensions
             MovieTitle = reviewNotification.ReviewResponse.Review.Movie.Title,
             MoviePoster = reviewNotification.ReviewResponse.Review.Movie.PosterPath,
             ReviewResponse = reviewNotification.ReviewResponse.ToReviewResponseDTO()
+        };
+    }
+
+    public static NotificationDTO ToNotificationDTO(this Notification notification)
+    {
+        return new NotificationDTO
+        {
+            Id = notification.Id,
+            CreatedAt = notification.CreatedAt,
+            IsRead = notification.IsRead,
+            UserId = notification.UserId
         };
     }
 }

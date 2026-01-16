@@ -1,6 +1,7 @@
 ﻿using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.DAL.Entities;
+using FilmShelf.DAL.Enums;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.TMDbClient.Interfaces;
 using FilmShelf.TMDbClient.Options;
@@ -59,6 +60,27 @@ public class MoviePageService : IMoviePageService
                 : (movieResponse.Results, movieResponse.TotalPages);
     }
 
+    public async Task<IEnumerable<MovieDTO>> GetPopularMoviesPageAsync()
+    {
+        var popularMoviesPage = await _unitOfWork.MoviePageRepository
+            .GetPageAsync(moviePageType: MoviePageType.Popular);
+
+        if (ShouldUpdatePage(popularMoviesPage))
+        {
+            popularMoviesPage = await FetchAndSavePopularMoviesPageAsync();
+        }
+
+        if (popularMoviesPage == null)
+        {
+            return Enumerable.Empty<MovieDTO>();
+        }
+
+        var movieResponse = JsonSerializer
+            .Deserialize<PageResponseWrapperDTO>(popularMoviesPage.MoviesJson);
+
+        return movieResponse?.Results ?? Enumerable.Empty<MovieDTO>();
+    }
+
     private async Task<MoviePage?> FetchAndSavePageAsync(int pageNumber)
     {
         var pageJson = await _movieApiIntegrationService.FetchMoviesPageAsync(pageNumber);
@@ -98,6 +120,43 @@ public class MoviePageService : IMoviePageService
         }
 
         await _unitOfWork.SaveAsync();
+        return moviePage;
+    }
+
+    private async Task<MoviePage?> FetchAndSavePopularMoviesPageAsync()
+    {
+        var (jsonResponse, popularMovies) = await _movieApiIntegrationService
+            .FetchPopularMoviesAsync(_tmdbSettings.PopularMoviesToFetch);
+
+        if (string.IsNullOrEmpty(jsonResponse))
+        {
+            return null;
+        }
+
+        var moviePage = new MoviePage
+        {
+            PageNumber = 1,
+            MoviesJson = jsonResponse,
+            UpdatedAt = DateTime.UtcNow,
+            Type = MoviePageType.Popular
+        };
+
+        var existingPage = await _unitOfWork.MoviePageRepository
+            .GetPageAsync(moviePageType: MoviePageType.Popular);
+
+        if (existingPage != null)
+        {
+            _unitOfWork.MoviePageRepository
+                .UpdatePage(existingPage, moviePage);
+        }
+        else
+        {
+            await _unitOfWork.MoviePageRepository
+                .AddPageAsync(moviePage);
+        }
+
+        await _unitOfWork.SaveAsync();
+
         return moviePage;
     }
 

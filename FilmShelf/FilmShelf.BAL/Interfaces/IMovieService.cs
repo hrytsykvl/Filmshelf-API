@@ -5,4 +5,5 @@ namespace FilmShelf.BAL.Interfaces;
 public interface IMovieService
 {
     Task<MovieDetailsDTO?> GetMovieAsync(int movieId);
+    Task<List<PopularMovieDTO>> GetPopularMoviesAsync();
 }
