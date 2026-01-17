@@ -81,14 +81,14 @@ public static class MappingExtensions
 
     public static MovieListResponseVM ToMovieListResponseVM(
         this IEnumerable<MovieDTO> movies,
-        int totalPages)
+        int? totalPages = null)
     {
         var moviesVM = movies.Select(m => m.ToMovieResponseVM()).ToList();
 
         return new MovieListResponseVM
         {
             MovieList = moviesVM,
-            TotalPages = totalPages
+            TotalPages = totalPages ?? null
         };
     }
 
@@ -205,10 +205,10 @@ public static class MappingExtensions
         };
     }
 
-    public static ReviewNotificationVM ToReviewNotificationVM(
-        this ReviewNotificationDTO reviewNotificationDTO)
+    public static NotificationVM ToNotificationVM(
+        this NotificationDTO reviewNotificationDTO)
     {
-        return new ReviewNotificationVM
+        return new NotificationVM
         {
             Id = reviewNotificationDTO.Id,
             CreatedAt = reviewNotificationDTO.CreatedAt,
@@ -217,7 +217,20 @@ public static class MappingExtensions
             MovieId = reviewNotificationDTO.MovieId,
             MovieTitle = reviewNotificationDTO.MovieTitle,
             MoviePoster = reviewNotificationDTO.MoviePoster,
-            ReviewResponse = reviewNotificationDTO.ReviewResponse.ToReviewResponseVM()
+            ReviewResponse = reviewNotificationDTO.ReviewResponse?.ToReviewResponseVM() ?? null
+        };
+    }
+
+    public static PopularMovieVM ToPopularMovieVM(
+        this PopularMovieDTO popularMovieDTO)
+    {
+        return new PopularMovieVM
+        {
+            Id = popularMovieDTO.Id,
+            Title = popularMovieDTO.Title,
+            PosterPath = popularMovieDTO.PosterPath,
+            AverageRating = popularMovieDTO.AverageRating,
+            ReleaseDate = popularMovieDTO.ReleaseDate
         };
     }
 

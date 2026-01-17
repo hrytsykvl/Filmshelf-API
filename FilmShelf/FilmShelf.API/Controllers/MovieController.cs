@@ -1,5 +1,6 @@
 ﻿using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
+using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,7 +45,19 @@ public class MovieController : ControllerBase
     [ProducesResponseType(typeof(MovieListResponseVM), StatusCodes.Status200OK)]
     public async Task<IActionResult> MoviesOnPage(PageRequestVM pageRequestVM)
     {
-        var (movies, totalPages) = await _moviePageService.GetMoviesOnPageAsync(pageRequestVM.Page);
+        IEnumerable<MovieDTO> movies;
+        int? totalPages = null;
+
+        if (!string.IsNullOrEmpty(pageRequestVM.Filter)
+            && pageRequestVM.Filter.ToLower() == "popular")
+        {
+            movies = await _moviePageService.GetPopularMoviesPageAsync();
+        }
+        else
+        {
+            var page = pageRequestVM.Page ?? 1;
+            (movies, totalPages) = await _moviePageService.GetMoviesOnPageAsync(page);
+        }
 
         var movieListResponseVM = movies.ToMovieListResponseVM(totalPages);
 

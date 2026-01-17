@@ -3,6 +3,7 @@ using FilmShelf.TMDbClient.Options;
 using FilmShelf.TMDbClient.Responses;
 using Microsoft.Extensions.Options;
 using RestSharp;
+using System.Text.Json;
 
 namespace FilmShelf.TMDbClient.Services;
 
@@ -35,6 +36,27 @@ internal class MovieApiIntegrationService : IMovieApiIntegrationService
     {
         var request = CreateRequest($"movie/{movieId}");
         return await _restClient.GetAsync<MovieDetailsResponse>(request);
+    }
+
+    public async Task<(string? JsonResponse, List<PopularMovieResponse> Movies)> FetchPopularMoviesAsync(int count)
+    {
+        var request = CreateRequest("movie/popular");
+        var response = await _restClient.GetAsync(request);
+
+        if (response == null 
+            || response.Content == null)
+        {
+            return (null, new ());
+        }
+
+        var popularMoviesResponse = JsonSerializer
+            .Deserialize<PopularMoviesResponse>(response.Content);
+
+        var movies = popularMoviesResponse?.Results
+            .Take(count)
+            .ToList() ?? new ();
+
+        return (response.Content, movies);
     }
 
     public async Task<string?> FetchMoviesPageAsync(int pageNumber)

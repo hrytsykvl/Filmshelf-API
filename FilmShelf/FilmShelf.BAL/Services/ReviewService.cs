@@ -48,12 +48,7 @@ public class ReviewService : IReviewService
         var review = await _unitOfWork.ReviewRepository
             .GetReviewByIdAsync(reviewId);
 
-        if (review == null)
-        {
-            return null;
-        }
-
-        return review.ToReviewDTO();
+        return review?.ToReviewDTO();
     }
 
     public async Task<List<ReviewDTO>> GetReviewsByMovieIdAsync(int movieId)
@@ -118,12 +113,7 @@ public class ReviewService : IReviewService
         var reviewResponse = await _unitOfWork.ReviewRepository
             .GetResponseByIdAsync(reviewId);
 
-        if (reviewResponse == null)
-        {
-            return null;
-        }
-
-        return reviewResponse.ToReviewResponseDTO();
+        return reviewResponse?.ToReviewResponseDTO();
     }
 
     public async Task DeleteReviewResponseAsync(int reviewResponseId, int userId)

@@ -3,6 +3,7 @@ using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.BAL.MappingExtensions;
 using FilmShelf.DAL.Entities;
+using FilmShelf.DAL.Enums;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.TMDbClient.Interfaces;
 using FilmShelf.TMDbClient.Options;
@@ -91,6 +92,25 @@ public class MovieService : IMovieService
             directorDetails.Name);
 
         return movieDetailsDTO;
+    }
+
+    public async Task<List<PopularMovieDTO>> GetPopularMoviesAsync()
+    {
+        var (jsonResponse, popularMovies) = await _movieApiIntegrationService
+            .FetchPopularMoviesAsync(_tmdbSettings.PopularMoviesToFetch);
+
+        var popularMoviesDTO = popularMovies
+            .Select(pm => new PopularMovieDTO
+            {
+                Id = pm.Id,
+                Title = pm.Title,
+                PosterPath = PhotoPathGenerator.GeneratePosterPath(pm.PosterPath),
+                AverageRating = pm.AverageRating,
+                ReleaseDate = pm.ReleaseDate
+            })
+            .ToList();
+
+        return popularMoviesDTO;
     }
 
     private async Task AddMovieWithDetails(

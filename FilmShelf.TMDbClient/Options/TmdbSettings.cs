@@ -13,6 +13,7 @@ public class TmdbSettings
     public int TotalPages { get; set; }
     public int NumberOfActors { get; set; }
     public string CrewJob { get; set; } = null!;
+    public int PopularMoviesToFetch { get; set; }
 
     public class ImageSettings
     {

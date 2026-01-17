@@ -113,7 +113,7 @@ public class ReviewController : ControllerBase
 
         await _hubContext.Clients
             .User(createdReviewResponseDTO.ReceiverId.ToString())
-            .ReceiveNotification(notification?.ToReviewNotificationVM()!);
+            .ReceiveNotification(notification?.ToNotificationVM()!);
 
         return CreatedAtAction(
             nameof(RetrieveReviewResponseById),

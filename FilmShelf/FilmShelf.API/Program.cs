@@ -107,6 +107,7 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"))
 builder.Services.Configure<MailJetSettings>(builder.Configuration.GetSection("MailJet"));
 builder.Services.Configure<TmdbSettings>(builder.Configuration.GetSection("TmdbSettings"));
 builder.Services.Configure<WatchlistSettings>(builder.Configuration.GetSection("Watchlist"));
+builder.Services.Configure<NotificationSettings>(builder.Configuration.GetSection("Notification"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IAccountService, AccountService>();
 builder.Services.AddTransient<ITokenService, JwtService>();
@@ -128,6 +129,7 @@ builder.Services.AddTransient<IReviewRepository, ReviewRepository>();
 builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHostedService<SyncBackgroundService>();
+builder.Services.AddHostedService<DailyNotificationService>();
 builder.Services.AddSingleton(provider =>
 {
     var tmdbSettings = provider.GetRequiredService<IOptions<TmdbSettings>>().Value;
@@ -217,7 +219,7 @@ app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseCors(x => x.WithOrigins("http://localhost:4200")
+app.UseCors(x => x.WithOrigins(builder.Configuration["Jwt:Audience"]!)
     .AllowCredentials()
     .AllowAnyMethod()
     .AllowAnyHeader());

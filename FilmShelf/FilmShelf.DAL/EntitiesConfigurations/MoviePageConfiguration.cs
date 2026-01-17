@@ -1,4 +1,5 @@
 ﻿using FilmShelf.DAL.Entities;
+using FilmShelf.DAL.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,12 +12,14 @@ public class MoviePageConfiguration : IEntityTypeConfiguration<MoviePage>
         builder.Property(p => p.PageNumber)
             .IsRequired();
 
-        builder.HasIndex(p => p.PageNumber).IsUnique();
-
         builder.Property(p => p.MoviesJson)
             .IsRequired();
 
         builder.Property(p => p.UpdatedAt)
             .IsRequired();
+
+        builder.Property(p => p.Type)
+            .HasConversion<string>()
+            .HasDefaultValue(MoviePageType.Regular);
     }
 }

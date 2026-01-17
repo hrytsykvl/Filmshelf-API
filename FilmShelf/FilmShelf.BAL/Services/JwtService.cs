@@ -26,7 +26,7 @@ public class JwtService : ITokenService
         Claim[] claims =
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString() ?? "")
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())
         };
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));

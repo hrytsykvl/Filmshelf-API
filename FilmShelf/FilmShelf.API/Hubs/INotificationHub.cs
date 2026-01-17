@@ -4,5 +4,6 @@ namespace FilmShelf.API.Hubs;
 
 public interface INotificationHub
 {
-    Task ReceiveNotification(ReviewNotificationVM notification);
+    Task ReceiveNotification(NotificationVM notification);
+    Task ReceiveMovieNotification(MovieNotificationVM movieNotification);
 }
