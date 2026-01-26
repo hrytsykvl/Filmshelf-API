@@ -1,4 +1,4 @@
-using FilmShelf.API.Middlewares;
+﻿using FilmShelf.API.Middlewares;
 using FilmShelf.API.VMs.Validators;
 using FilmShelf.API.Workers;
 using FilmShelf.BAL.Helpers;
@@ -144,6 +144,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = true;
     options.Password.RequireDigit = true;
+    options.User.AllowedUserNameCharacters = null;
 })
 .AddEntityFrameworkStores<FilmsDbContext>()
 .AddDefaultTokenProviders()
@@ -154,6 +155,11 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddGoogle(googleOptions =>
+{
+    googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+    googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
 })
 .AddJwtBearer(options =>
 {

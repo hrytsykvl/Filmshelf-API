@@ -1,4 +1,5 @@
 ﻿using FilmShelf.BAL.DTOs;
+using Google.Apis.Auth;
 
 namespace FilmShelf.BAL.Interfaces;
 
@@ -11,4 +12,5 @@ public interface IAccountService
     Task<PasswordResponseDTO> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO);
     Task<PasswordResponseDTO> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO);
     Task LogoutUserAsync(string refreshToken);
+    Task<AuthenticationResponseDTO?> AuthenticateGoogleUserAsync(string googleIdToken);
 }

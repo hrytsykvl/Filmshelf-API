@@ -7,6 +7,8 @@ using System.Security.Claims;
 using FilmShelf.BAL.Exceptions;
 using FilmShelf.BAL.Options;
 using Microsoft.Extensions.Options;
+using Google.Apis.Auth;
+using Mailjet.Client.Resources;
 
 namespace FilmShelf.BAL.Services;
 
@@ -234,5 +236,58 @@ public class AccountService : IAccountService
         {
             await _refreshTokenRepository.RemoveRefreshTokenAsync(existingToken);
         }
+    }
+
+    public async Task<AuthenticationResponseDTO?> AuthenticateGoogleUserAsync(string googleIdToken)
+    {
+        var payload = await GoogleJsonWebSignature.ValidateAsync(googleIdToken);
+
+        var email = payload.Email;
+        var name = payload.Name;
+
+        var existingUser = await _userManager.FindByEmailAsync(email);
+
+        if (existingUser != null)
+        {
+            return await GenerateAuthenticationResponseAsync(existingUser);
+        }
+        else
+        {
+            var newUser = new ApplicationUser
+            {
+                UserName = name,
+                Email = email
+            };
+
+            var createUserResult = await _userManager.CreateAsync(newUser);
+
+            if (!createUserResult.Succeeded)
+            {
+                return null;
+            }
+
+            await _watchlistService.CreateWatchlistAsync(
+                newUser.Id,
+                _watchlistSettings.DefaultName,
+                true);
+
+            return await GenerateAuthenticationResponseAsync(newUser);
+        }
+    }
+
+    private async Task<AuthenticationResponseDTO> GenerateAuthenticationResponseAsync(ApplicationUser user)
+    {
+        var authenticationResponse = _jwtService.CreateJwtToken(user);
+
+        var newRefreshToken = new RefreshToken
+        {
+            Token = authenticationResponse.RefreshToken,
+            ExpirationDate = authenticationResponse.RefreshTokenExpirationDate,
+            UserId = user.Id
+        };
+
+        await _refreshTokenRepository.AddRefreshTokenAsync(newRefreshToken);
+
+        return authenticationResponse;
     }
 }

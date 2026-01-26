@@ -61,6 +61,21 @@ public class AccountController : ControllerBase
         return Ok(authenticationResponse);
     }
 
+    [HttpPost("google-login")]
+    [ProducesResponseType(typeof(AuthenticationResponseVM), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleTokenVM googleTokenVM)
+    {
+        var authenticationResponse = await _accountService.AuthenticateGoogleUserAsync(googleTokenVM.IdToken);
+
+        if (authenticationResponse == null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(authenticationResponse);
+    }
+
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
