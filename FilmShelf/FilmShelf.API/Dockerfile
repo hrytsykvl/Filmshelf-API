@@ -15,6 +15,7 @@ WORKDIR /src
 COPY ["FilmShelf.API/FilmShelf.API.csproj", "FilmShelf.API/"]
 COPY ["FilmShelf.BAL/FilmShelf.BAL.csproj", "FilmShelf.BAL/"]
 COPY ["FilmShelf.DAL/FilmShelf.DAL.csproj", "FilmShelf.DAL/"]
+COPY ["FilmShelf.TMDbClient/FilmShelf.TMDbClient.csproj", "FilmShelf.TMDBClient/"]
 RUN dotnet restore "./FilmShelf.API/FilmShelf.API.csproj"
 COPY . .
 WORKDIR "/src/FilmShelf.API"

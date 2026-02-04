@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FilmShelf.BAL", "FilmShelf.
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{80C9C163-9E01-492B-9BD1-4C5BE89947AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilmShelf.TMDbClient", "..\FilmShelf.TMDbClient\FilmShelf.TMDbClient.csproj", "{3B2326FC-71D8-4B6B-A4DA-E32BB993697E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilmShelf.TMDbClient", "FilmShelf.TMDbClient\FilmShelf.TMDbClient.csproj", "{3B2326FC-71D8-4B6B-A4DA-E32BB993697E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
