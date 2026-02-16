@@ -1,6 +1,7 @@
 ﻿using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
 using FilmShelf.BAL.DTOs;
+using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,15 +14,18 @@ public class MovieController : ControllerBase
     private readonly IMovieService _movieService;
     private readonly IMoviePageService _moviePageService;
     private readonly IReviewService _reviewService;
+    private readonly IRecommendationService _recommendationService;
 
     public MovieController(
         IMovieService movieService,
         IMoviePageService moviePageService,
-        IReviewService reviewService)
+        IReviewService reviewService,
+        IRecommendationService recommendationService)
     {
         _movieService = movieService;
         _moviePageService = moviePageService;
         _reviewService = reviewService;
+        _recommendationService = recommendationService;
     }
 
     [HttpGet("{id}")]
@@ -75,5 +79,21 @@ public class MovieController : ControllerBase
             .Select(r => r.ToReviewVM());
 
         return Ok(reviewVMs);
+    }
+
+    [HttpGet("recommendations")]
+    public async Task<IActionResult> GetMovieRecommendations()
+    {
+        var userId = UserClaimsHelper.GetUserId(User);
+        
+        var recommendedMovies = await _recommendationService
+            .RecommendForUser(userId);
+
+        if (recommendedMovies == null || !recommendedMovies.Any())
+        {
+            return NotFound();
+        }
+
+        return Ok(recommendedMovies);
     }
 }

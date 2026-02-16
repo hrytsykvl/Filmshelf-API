@@ -27,6 +27,7 @@ using System.Reflection;
 using System.Text;
 using FilmShelf.API.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using FilmShelf.BAL.MappingExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -108,26 +109,27 @@ builder.Services.Configure<MailJetSettings>(builder.Configuration.GetSection("Ma
 builder.Services.Configure<TmdbSettings>(builder.Configuration.GetSection("TmdbSettings"));
 builder.Services.Configure<WatchlistSettings>(builder.Configuration.GetSection("Watchlist"));
 builder.Services.Configure<NotificationSettings>(builder.Configuration.GetSection("Notification"));
-builder.Services.AddTransient<IEmailService, EmailService>();
-builder.Services.AddTransient<IAccountService, AccountService>();
-builder.Services.AddTransient<ITokenService, JwtService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<ITokenService, JwtService>();
 builder.Services.AddTMDbClient();
-builder.Services.AddTransient<IMovieService, MovieService>();
-builder.Services.AddTransient<IActorService, ActorService>();
-builder.Services.AddTransient<IWatchlistService, WatchlistService>();
-builder.Services.AddTransient<IMoviePageService, MoviePageService>();
-builder.Services.AddTransient<IReviewService, ReviewService>();
-builder.Services.AddTransient<INotificationService, NotificationService>();
-builder.Services.AddTransient<IMoviePageRepository, MoviePageRepository>();
-builder.Services.AddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddTransient<IMovieRepository, MovieRepository>();
-builder.Services.AddTransient<IDirectorRepository, DirectorRepository>();
-builder.Services.AddTransient<IGenreRepository, GenreRepository>();
-builder.Services.AddTransient<IActorRepository, ActorRepository>();
-builder.Services.AddTransient<IWatchlistRepository, WatchlistRepository>();
-builder.Services.AddTransient<IReviewRepository, ReviewRepository>();
-builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
-builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IActorService, ActorService>();
+builder.Services.AddScoped<IWatchlistService, WatchlistService>();
+builder.Services.AddScoped<IMoviePageService, MoviePageService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddScoped<IMoviePageRepository, MoviePageRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+builder.Services.AddScoped<IDirectorRepository, DirectorRepository>();
+builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+builder.Services.AddScoped<IActorRepository, ActorRepository>();
+builder.Services.AddScoped<IWatchlistRepository, WatchlistRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHostedService<SyncBackgroundService>();
 builder.Services.AddHostedService<DailyNotificationService>();
 builder.Services.AddSingleton(provider =>
@@ -191,6 +193,8 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddCors(options =>
 {
