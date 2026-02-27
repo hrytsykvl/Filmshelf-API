@@ -1,4 +1,5 @@
 ﻿using FilmShelf.TMDbClient.Interfaces;
+using FilmShelf.TMDbClient.JsonConverters;
 using FilmShelf.TMDbClient.Options;
 using FilmShelf.TMDbClient.Responses;
 using Microsoft.Extensions.Options;
@@ -67,6 +68,36 @@ internal class MovieApiIntegrationService : IMovieApiIntegrationService
 
         var response = await _restClient.GetAsync(request);
         return response.Content;
+    }
+
+    public async Task<List<SearchMovieResponse>> SearchMovie(string searchQuery)
+    {
+        const int MaxResults = 8;
+        var request = CreateRequest("search/movie")
+            .AddQueryParameter("query", searchQuery);
+
+        var response = await _restClient.GetAsync(request);
+
+        if (response == null
+            || response.Content == null)
+        {
+            return new ();
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            Converters = { new NullableDateTimeConverter() },
+            PropertyNameCaseInsensitive = true
+        };
+
+        var searchResults = JsonSerializer
+            .Deserialize<SearchMoviesResponse>(response.Content, options);
+
+        var movies = searchResults?.Results
+            .Take(MaxResults)
+            .ToList() ?? new ();
+
+        return movies;
     }
 
     private RestRequest CreateRequest(string resource)

@@ -28,6 +28,7 @@ using System.Text;
 using FilmShelf.API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using FilmShelf.BAL.MappingExtensions;
+using FilmShelf.API.MappingExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -194,7 +195,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(typeof(MappingProfile), typeof(MappingProfileVM));
 
 builder.Services.AddCors(options =>
 {

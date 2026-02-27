@@ -3,12 +3,12 @@ using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.BAL.MappingExtensions;
 using FilmShelf.DAL.Entities;
-using FilmShelf.DAL.Enums;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.TMDbClient.Interfaces;
 using FilmShelf.TMDbClient.Options;
 using FilmShelf.TMDbClient.Responses;
 using Microsoft.Extensions.Options;
+using AutoMapper;
 
 namespace FilmShelf.BAL.Services;
 
@@ -17,15 +17,18 @@ public class MovieService : IMovieService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMovieApiIntegrationService _movieApiIntegrationService;
     private readonly TmdbSettings _tmdbSettings;
+    private readonly IMapper _mapper;
 
     public MovieService(
         IUnitOfWork unitOfWork,
         IMovieApiIntegrationService movieApiIntegrationService,
-        IOptions<TmdbSettings> tmdbSettings)
+        IOptions<TmdbSettings> tmdbSettings,
+        IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _movieApiIntegrationService = movieApiIntegrationService;
         _tmdbSettings = tmdbSettings.Value;
+        _mapper = mapper;
     }
 
     public async Task<MovieDetailsDTO?> GetMovieAsync(int movieId)
@@ -111,6 +114,16 @@ public class MovieService : IMovieService
             .ToList();
 
         return popularMoviesDTO;
+    }
+
+    public async Task<List<MovieDTO>> SearchMovie(string searchQuery)
+    {
+        var movies = await _movieApiIntegrationService
+            .SearchMovie(searchQuery);
+
+        var movieDTOs = _mapper.Map<List<MovieDTO>>(movies);
+
+        return movieDTOs;
     }
 
     private async Task AddMovieWithDetails(

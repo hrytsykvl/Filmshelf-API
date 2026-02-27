@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace FilmShelf.BAL.DTOs;
+namespace FilmShelf.TMDbClient.Responses;
 
-public class MovieDTO
+public class SearchMovieResponse
 {
     [JsonPropertyName("id")]
     public int Id { get; set; }

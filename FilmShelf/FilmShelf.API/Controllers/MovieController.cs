@@ -1,9 +1,11 @@
-﻿using FilmShelf.API.MappingExtensions;
+﻿using AutoMapper;
+using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
 using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace FilmShelf.API.Controllers;
 
@@ -15,17 +17,20 @@ public class MovieController : ControllerBase
     private readonly IMoviePageService _moviePageService;
     private readonly IReviewService _reviewService;
     private readonly IRecommendationService _recommendationService;
+    private readonly IMapper _mapper;
 
     public MovieController(
         IMovieService movieService,
         IMoviePageService moviePageService,
         IReviewService reviewService,
-        IRecommendationService recommendationService)
+        IRecommendationService recommendationService,
+        IMapper mapper)
     {
         _movieService = movieService;
         _moviePageService = moviePageService;
         _reviewService = reviewService;
         _recommendationService = recommendationService;
+        _mapper = mapper;
     }
 
     [HttpGet("{id}")]
@@ -81,6 +86,14 @@ public class MovieController : ControllerBase
         return Ok(reviewVMs);
     }
 
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchMovies(string searchQuery)
+    {
+        var movies = await _movieService.SearchMovie(searchQuery);
+
+        return Ok(_mapper.Map<List<MovieResponseVM>>(movies));
+    }
+
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetMovieRecommendations()
     {
@@ -94,6 +107,6 @@ public class MovieController : ControllerBase
             return NotFound();
         }
 
-        return Ok(recommendedMovies);
+        return Ok(_mapper.Map<List<MovieResponseVM>>(recommendedMovies));
     }
 }
