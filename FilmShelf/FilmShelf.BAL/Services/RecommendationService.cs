@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.BAL.MLModels;
@@ -10,22 +10,12 @@ namespace FilmShelf.BAL.Services;
 public class RecommendationService : IRecommendationService
 {
     private readonly FilmsDbContext _context;
-    private readonly MovieRecommender _recommender;
     private readonly IMapper _mapper;
-
 
     public RecommendationService(FilmsDbContext context, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
-        var ratings = _context.Reviews.Select(r => new MovieRatingDTO
-        {
-            UserId = r.UserId,
-            MovieId = r.MovieId,
-            Label = r.Rating
-        }).ToList();
-
-        _recommender = new MovieRecommender(ratings);
     }
 
     public async Task<List<MovieDTO>> RecommendForUser(int userId)
@@ -39,8 +29,13 @@ public class RecommendationService : IRecommendationService
            })
            .ToListAsync();
 
-        var recommender = new MovieRecommender(ratings);
+        var distinctUsers = ratings.Select(r => r.UserId).Distinct().Count();
+        var distinctMovies = ratings.Select(r => r.MovieId).Distinct().Count();
 
+        if (distinctUsers < 2 || distinctMovies < 2)
+            return new List<MovieDTO>();
+
+        var recommender = new MovieRecommender(ratings);
         var recommendedMovieIds = recommender.RecommendForUser(userId, ratings, top: 10);
 
         var recommendedMovies = await _context.Movies

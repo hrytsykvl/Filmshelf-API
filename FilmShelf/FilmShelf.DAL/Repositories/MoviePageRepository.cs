@@ -26,6 +26,11 @@ public class MoviePageRepository : IMoviePageRepository
                                      && p.Type == moviePageType);
     }
 
+    public async Task<List<MoviePage>> GetAllPagesAsync()
+    {
+        return await _context.MoviePages.ToListAsync();
+    }
+
     public async Task AddPageAsync(MoviePage page)
     {
         await _context.MoviePages.AddAsync(page);

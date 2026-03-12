@@ -8,6 +8,7 @@ public interface IMoviePageRepository
     Task<MoviePage?> GetPageAsync(
         int? pageNumber = null,
         MoviePageType? moviePageType = MoviePageType.Regular);
+    Task<List<MoviePage>> GetAllPagesAsync();
     Task AddPageAsync(MoviePage page);
     void UpdatePage(MoviePage pageToUpdate, MoviePage page);
 }

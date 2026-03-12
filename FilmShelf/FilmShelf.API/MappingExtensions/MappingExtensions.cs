@@ -270,6 +270,22 @@ public static class MappingExtensions
         };
     }
 
+    public static LlmRecommendationVM ToLlmRecommendationVM(
+        this LlmRecommendationDTO dto)
+    {
+        return new LlmRecommendationVM
+        {
+            Movie = new MovieResponseVM
+            {
+                Id = dto.Movie.Id,
+                Title = dto.Movie.Title,
+                PosterPath = PhotoPathGenerator.GeneratePosterPath(dto.Movie.PosterPath)
+            },
+            Score = dto.Score,
+            Reason = dto.Reason
+        };
+    }
+
     private static MovieResponseVM ToMovieResponseVM(
         this MovieDTO movieDTO)
     {
@@ -278,6 +294,35 @@ public static class MappingExtensions
             Id = movieDTO.Id,
             Title = movieDTO.Title,
             PosterPath = PhotoPathGenerator.GeneratePosterPath(movieDTO.PosterPath),
+        };
+    }
+
+    public static EvaluationRequestDTO ToEvaluationRequestDTO(this EvaluationRequestVM vm)
+    {
+        return new EvaluationRequestDTO
+        {
+            K = vm.K,
+            MinReviews = vm.MinReviews,
+            RelevanceThreshold = vm.RelevanceThreshold
+        };
+    }
+
+    public static EvaluationResultVM ToEvaluationResultVM(this EvaluationResultDTO dto)
+    {
+        return new EvaluationResultVM
+        {
+            Method = dto.Method,
+            K = dto.K,
+            EvaluatedUsers = dto.EvaluatedUsers,
+            SkippedUsers = dto.SkippedUsers,
+            HitRateAtK = dto.HitRateAtK,
+            PrecisionAtK = dto.PrecisionAtK,
+            RecallAtK = dto.RecallAtK,
+            NdcgAtK = dto.NdcgAtK,
+            Mrr = dto.Mrr,
+            CatalogCoverage = dto.CatalogCoverage,
+            EvaluationDurationSeconds = dto.EvaluationDurationSeconds,
+            EvaluatedAt = dto.EvaluatedAt
         };
     }
 }

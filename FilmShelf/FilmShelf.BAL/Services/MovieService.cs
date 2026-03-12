@@ -9,6 +9,7 @@ using FilmShelf.TMDbClient.Options;
 using FilmShelf.TMDbClient.Responses;
 using Microsoft.Extensions.Options;
 using AutoMapper;
+using System.Text.Json;
 
 namespace FilmShelf.BAL.Services;
 
@@ -114,6 +115,94 @@ public class MovieService : IMovieService
             .ToList();
 
         return popularMoviesDTO;
+    }
+
+    public async Task<BulkImportResultDTO> BulkImportFromPagesAsync()
+    {
+        var pages = await _unitOfWork.MoviePageRepository.GetAllPagesAsync();
+
+        var tmdbIds = new HashSet<int>();
+
+        foreach (var page in pages)
+        {
+            using var doc = JsonDocument.Parse(page.MoviesJson);
+
+            if (!doc.RootElement.TryGetProperty("results", out var results))
+                continue;
+
+            foreach (var movie in results.EnumerateArray())
+            {
+                if (movie.TryGetProperty("id", out var idElement)
+                    && idElement.TryGetInt32(out var id))
+                {
+                    tmdbIds.Add(id);
+                }
+            }
+        }
+
+        return await BulkImportFromTmdbAsync(tmdbIds.ToList());
+    }
+
+    public async Task<BulkImportResultDTO> BulkImportFromTmdbAsync(List<int> tmdbIds)
+    {
+        var result = new BulkImportResultDTO();
+
+        foreach (var movieId in tmdbIds)
+        {
+            var existing = await _unitOfWork.MovieRepository.GetMovieAsync(movieId);
+            if (existing != null)
+            {
+                result.Skipped++;
+                continue;
+            }
+
+            try
+            {
+                var movieDetails = await _movieApiIntegrationService.FetchMovieDetailsAsync(movieId);
+                if (movieDetails == null)
+                {
+                    result.Failed++;
+                    result.FailedIds.Add(movieId);
+                    continue;
+                }
+
+                var movieCredits = await _movieApiIntegrationService.FetchMovieCreditsAsync(movieId);
+                if (movieCredits?.Crew == null)
+                {
+                    result.Failed++;
+                    result.FailedIds.Add(movieId);
+                    continue;
+                }
+
+                var directorCrew = movieCredits.Crew
+                    .FirstOrDefault(c => c.Job == _tmdbSettings.CrewJob);
+                if (directorCrew == null)
+                {
+                    result.Failed++;
+                    result.FailedIds.Add(movieId);
+                    continue;
+                }
+
+                var directorDetails = await _movieApiIntegrationService
+                    .FetchPersonDetailsAsync<DirectorDetailsResponse>(directorCrew.Id);
+                if (directorDetails == null)
+                {
+                    result.Failed++;
+                    result.FailedIds.Add(movieId);
+                    continue;
+                }
+
+                await AddMovieWithDetails(movieId, movieDetails, directorCrew.Id, directorDetails, movieCredits);
+                result.Saved++;
+            }
+            catch (Exception)
+            {
+                result.Failed++;
+                result.FailedIds.Add(movieId);
+            }
+        }
+
+        return result;
     }
 
     public async Task<List<MovieDTO>> SearchMovie(string searchQuery)

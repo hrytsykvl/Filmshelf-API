@@ -42,7 +42,8 @@ builder.Services.AddFluentValidationAutoValidation()
     .AddValidatorsFromAssemblyContaining<LoginVMValidator>();
 
 builder.Services.AddDbContext<FilmsDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -121,6 +122,18 @@ builder.Services.AddScoped<IMoviePageService, MoviePageService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddScoped<IContentBasedRecommendationService, ContentBasedRecommendationService>();
+builder.Services.AddScoped<ICollaborativeRecommendationService, CollaborativeRecommendationService>();
+builder.Services.Configure<ClaudeSettings>(builder.Configuration.GetSection("Claude"));
+builder.Services.AddHttpClient<IClaudeApiService, ClaudeApiService>();
+builder.Services.AddScoped<ILlmRecommendationService, LlmRecommendationService>();
+builder.Services.Configure<AzureOpenAiSettings>(builder.Configuration.GetSection("AzureOpenAi"));
+builder.Services.Configure<AzureSearchSettings>(builder.Configuration.GetSection("AzureSearch"));
+builder.Services.AddScoped<IAzureEmbeddingService, AzureEmbeddingService>();
+builder.Services.AddScoped<IMovieIndexService, MovieIndexService>();
+builder.Services.AddScoped<IEmbeddingRecommendationService, EmbeddingRecommendationService>();
+builder.Services.AddScoped<IEvaluationRepository, EvaluationRepository>();
+builder.Services.AddScoped<IOfflineEvaluationService, OfflineEvaluationService>();
 builder.Services.AddScoped<IMoviePageRepository, MoviePageRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
