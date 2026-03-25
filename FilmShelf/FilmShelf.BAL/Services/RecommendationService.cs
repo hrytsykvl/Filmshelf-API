@@ -18,7 +18,7 @@ public class RecommendationService : IRecommendationService
         _mapper = mapper;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUser(int userId)
+    public async Task<List<MovieDTO>> RecommendForUser(int userId, int? holdOutMovieId = null)
     {
         var ratings = await _context.Reviews
            .Select(r => new MovieRatingDTO
@@ -36,7 +36,7 @@ public class RecommendationService : IRecommendationService
             return new List<MovieDTO>();
 
         var recommender = new MovieRecommender(ratings);
-        var recommendedMovieIds = recommender.RecommendForUser(userId, ratings, top: 10);
+        var recommendedMovieIds = recommender.RecommendForUser(userId, ratings, top: 10, holdOutMovieId: holdOutMovieId);
 
         var recommendedMovies = await _context.Movies
             .Where(m => recommendedMovieIds.Contains(m.Id))

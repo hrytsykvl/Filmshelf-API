@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using AutoMapper;
 using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.VMs;
@@ -22,6 +23,7 @@ public class MovieController : ControllerBase
     private readonly IContentBasedRecommendationService _contentBasedRecommendationService;
     private readonly ICollaborativeRecommendationService _collaborativeRecommendationService;
     private readonly IEmbeddingRecommendationService _embeddingRecommendationService;
+    private readonly ILlamaRecommendationService _llamaRecommendationService;
     private readonly IMovieIndexService _movieIndexService;
     private readonly IMapper _mapper;
     private readonly ILogger<MovieController> _logger;
@@ -35,6 +37,7 @@ public class MovieController : ControllerBase
         IContentBasedRecommendationService contentBasedRecommendationService,
         ICollaborativeRecommendationService collaborativeRecommendationService,
         IEmbeddingRecommendationService embeddingRecommendationService,
+        ILlamaRecommendationService llamaRecommendationService,
         IMovieIndexService movieIndexService,
         IMapper mapper,
         ILogger<MovieController> logger
@@ -48,6 +51,7 @@ public class MovieController : ControllerBase
         _contentBasedRecommendationService = contentBasedRecommendationService;
         _collaborativeRecommendationService = collaborativeRecommendationService;
         _embeddingRecommendationService = embeddingRecommendationService;
+        _llamaRecommendationService = llamaRecommendationService;
         _movieIndexService = movieIndexService;
         _mapper = mapper;
         _logger = logger;
@@ -168,6 +172,7 @@ public class MovieController : ControllerBase
     /// - content: content-based filtering (genres, director, actors)
     /// - user-cf: user-based collaborative filtering (Pearson correlation)
     /// - embedding: Azure OpenAI embeddings + Azure AI Search vector similarity
+    /// - llama: locally-hosted Llama model via Ollama with per-movie reasoning
     /// </summary>
     [HttpGet("recommendations")]
     [Authorize]
@@ -217,6 +222,16 @@ public class MovieController : ControllerBase
                 return NotFound();
 
             return Ok(_mapper.Map<List<MovieResponseVM>>(embeddingMovies));
+        }
+
+        if (method.Equals("llama", StringComparison.OrdinalIgnoreCase))
+        {
+            var llamaRecs = await _llamaRecommendationService.RecommendForUserAsync(userId);
+
+            if (!llamaRecs.Any())
+                return NotFound();
+
+            return Ok(llamaRecs.Select(r => r.ToLlmRecommendationVM()));
         }
 
         try
@@ -283,6 +298,36 @@ public class MovieController : ControllerBase
         {
             MlRecommendations = _mapper.Map<List<MovieResponseVM>>(mlTask.Result),
             LlmRecommendations = llmTask.Result.Select(r => r.ToLlmRecommendationVM()).ToList(),
+            GeneratedAt = DateTime.UtcNow,
+        };
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Compare Claude vs Llama LLM-based recommendations side by side with response times.
+    /// </summary>
+    [HttpGet("recommendations/compare-llm")]
+    [Authorize]
+    [ProducesResponseType(typeof(LlmComparisonResultVM), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLlmComparison()
+    {
+        var userId = UserClaimsHelper.GetUserId(User);
+
+        var claudeSw = Stopwatch.StartNew();
+        var claudeRecs = await _llmRecommendationService.RecommendForUserAsync(userId);
+        claudeSw.Stop();
+
+        var llamaSw = Stopwatch.StartNew();
+        var llamaRecs = await _llamaRecommendationService.RecommendForUserAsync(userId);
+        llamaSw.Stop();
+
+        var result = new LlmComparisonResultVM
+        {
+            ClaudeRecommendations = claudeRecs.Select(r => r.ToLlmRecommendationVM()).ToList(),
+            LlamaRecommendations = llamaRecs.Select(r => r.ToLlmRecommendationVM()).ToList(),
+            ClaudeResponseTimeMs = claudeSw.Elapsed.TotalMilliseconds,
+            LlamaResponseTimeMs = llamaSw.Elapsed.TotalMilliseconds,
             GeneratedAt = DateTime.UtcNow,
         };
 

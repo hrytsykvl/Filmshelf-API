@@ -34,7 +34,7 @@ public class MovieRecommender
         _model = trainingPipeline.Fit(trainingDataView);
     }
 
-    public List<int> RecommendForUser(int userId, IEnumerable<MovieRatingDTO> allRatings, int top = 5)
+    public List<int> RecommendForUser(int userId, IEnumerable<MovieRatingDTO> allRatings, int top = 5, int? holdOutMovieId = null)
     {
         var predictionEngine = _mlContext.Model.CreatePredictionEngine<MovieRatingDTO, MovieRatingPredictionDTO>(_model);
 
@@ -42,6 +42,8 @@ public class MovieRecommender
             .Where(r => r.UserId == userId)
             .Select(r => (int)r.MovieId)
             .ToHashSet();
+        if (holdOutMovieId.HasValue)
+            ratedMovieIds.Remove(holdOutMovieId.Value);
 
         var allMovieIds = allRatings.Select(r => (int)r.MovieId).Distinct();
 

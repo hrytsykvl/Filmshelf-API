@@ -11,12 +11,13 @@ public class OfflineEvaluationService(
     IContentBasedRecommendationService contentService,
     ICollaborativeRecommendationService cfService,
     ILlmRecommendationService llmService,
+    ILlamaRecommendationService llamaService,
     IEmbeddingRecommendationService embeddingService,
     IEvaluationRepository evaluationRepository,
     ILogger<OfflineEvaluationService> logger
 ) : IOfflineEvaluationService
 {
-    private static readonly string[] AllMethods = ["ml", "content", "user-cf", "llm", "embedding"];
+    private static readonly string[] AllMethods = ["ml", "content", "user-cf", "llm", "llama", "embedding"];
 
     public async Task<List<EvaluationResultDTO>> EvaluateAllMethodsAsync(
         EvaluationRequestDTO request
@@ -60,7 +61,14 @@ public class OfflineEvaluationService(
         var recommendedMovieIds = new HashSet<int>();
         var skippedUsers = 0;
 
-        foreach (var userId in eligibleUserIds)
+        var usersToEvaluate = request.LlmMaxUsers.HasValue &&
+            (method.Equals("llm", StringComparison.OrdinalIgnoreCase) ||
+             method.Equals("llama", StringComparison.OrdinalIgnoreCase) ||
+             method.Equals("embedding", StringComparison.OrdinalIgnoreCase))
+            ? eligibleUserIds.Take(request.LlmMaxUsers.Value)
+            : eligibleUserIds;
+
+        foreach (var userId in usersToEvaluate)
         {
             if (
                 !reviewsByUser.TryGetValue(userId, out var userReviews)
@@ -77,7 +85,7 @@ public class OfflineEvaluationService(
             List<int> recommendedIds;
             try
             {
-                recommendedIds = await GetRecommendedIdsAsync(method, userId, request.K);
+                recommendedIds = await GetRecommendedIdsAsync(method, userId, request.K, testItem.MovieId);
             }
             catch (Exception ex)
             {
@@ -141,36 +149,41 @@ public class OfflineEvaluationService(
         };
     }
 
-    private async Task<List<int>> GetRecommendedIdsAsync(string method, int userId, int k)
+    private async Task<List<int>> GetRecommendedIdsAsync(string method, int userId, int k, int holdOutMovieId)
     {
         if (method.Equals("ml", StringComparison.OrdinalIgnoreCase))
         {
-            // ML service has no top param — returns a fixed-size list
-            var movies = await mlService.RecommendForUser(userId);
+            var movies = await mlService.RecommendForUser(userId, holdOutMovieId);
             return movies?.Take(k).Select(m => m.Id).ToList() ?? [];
         }
 
         if (method.Equals("content", StringComparison.OrdinalIgnoreCase))
         {
-            var movies = await contentService.RecommendForUserAsync(userId, k);
+            var movies = await contentService.RecommendForUserAsync(userId, k, holdOutMovieId);
             return movies.Select(m => m.Id).ToList();
         }
 
         if (method.Equals("user-cf", StringComparison.OrdinalIgnoreCase))
         {
-            var movies = await cfService.RecommendForUserAsync(userId, k);
+            var movies = await cfService.RecommendForUserAsync(userId, k, holdOutMovieId);
             return movies.Select(m => m.Id).ToList();
         }
 
         if (method.Equals("llm", StringComparison.OrdinalIgnoreCase))
         {
-            var recs = await llmService.RecommendForUserAsync(userId, k);
+            var recs = await llmService.RecommendForUserAsync(userId, k, holdOutMovieId);
+            return recs.Select(r => r.Movie.Id).ToList();
+        }
+
+        if (method.Equals("llama", StringComparison.OrdinalIgnoreCase))
+        {
+            var recs = await llamaService.RecommendForUserAsync(userId, k, holdOutMovieId);
             return recs.Select(r => r.Movie.Id).ToList();
         }
 
         if (method.Equals("embedding", StringComparison.OrdinalIgnoreCase))
         {
-            var movies = await embeddingService.RecommendForUserAsync(userId, k);
+            var movies = await embeddingService.RecommendForUserAsync(userId, k, holdOutMovieId);
             return movies.Select(m => m.Id).ToList();
         }
 

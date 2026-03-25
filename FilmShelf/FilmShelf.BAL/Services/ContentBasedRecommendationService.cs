@@ -25,7 +25,7 @@ public class ContentBasedRecommendationService : IContentBasedRecommendationServ
         _logger = logger;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10)
+    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
     {
         var userReviews = await _context
             .Reviews.Where(r => r.UserId == userId)
@@ -36,6 +36,8 @@ public class ContentBasedRecommendationService : IContentBasedRecommendationServ
             return new List<MovieDTO>();
 
         var ratedMovieIds = userReviews.Select(r => r.MovieId).ToHashSet();
+        if (holdOutMovieId.HasValue)
+            ratedMovieIds.Remove(holdOutMovieId.Value);
 
         var allMovies = await _context
             .Movies.Include(m => m.MovieGenres)

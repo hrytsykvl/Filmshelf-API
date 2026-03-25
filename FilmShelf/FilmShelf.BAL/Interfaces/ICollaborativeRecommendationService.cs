@@ -4,5 +4,5 @@ namespace FilmShelf.BAL.Interfaces;
 
 public interface ICollaborativeRecommendationService
 {
-    Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10);
+    Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null);
 }

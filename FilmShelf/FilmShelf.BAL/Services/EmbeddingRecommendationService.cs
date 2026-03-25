@@ -37,7 +37,7 @@ public class EmbeddingRecommendationService : IEmbeddingRecommendationService
         _logger = logger;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10)
+    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
     {
         var userReviews = await _context
             .Reviews.Include(r => r.Movie)
@@ -59,6 +59,8 @@ public class EmbeddingRecommendationService : IEmbeddingRecommendationService
             .ToListAsync();
 
         var excludedIds = ratedMovieIds.Concat(watchlistedMovieIds).ToHashSet();
+        if (holdOutMovieId.HasValue)
+            excludedIds.Remove(holdOutMovieId.Value);
 
         var profileText = BuildUserProfile(userReviews);
         var profileEmbedding = await _embeddingService.GetEmbeddingAsync(profileText);

@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using AutoMapper;
 using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
@@ -5,35 +8,37 @@ using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace FilmShelf.BAL.Services;
 
-public class LlmRecommendationService : ILlmRecommendationService
+public class LlamaRecommendationService : ILlamaRecommendationService
 {
     private readonly FilmsDbContext _context;
-    private readonly IClaudeApiService _claudeApiService;
+    private readonly ILlamaApiService _llamaApiService;
     private readonly IMapper _mapper;
-    private readonly ILogger<LlmRecommendationService> _logger;
+    private readonly ILogger<LlamaRecommendationService> _logger;
 
-    public LlmRecommendationService(
+    public LlamaRecommendationService(
         FilmsDbContext context,
-        IClaudeApiService claudeApiService,
+        ILlamaApiService llamaApiService,
         IMapper mapper,
-        ILogger<LlmRecommendationService> logger)
+        ILogger<LlamaRecommendationService> logger
+    )
     {
         _context = context;
-        _claudeApiService = claudeApiService;
+        _llamaApiService = llamaApiService;
         _mapper = mapper;
         _logger = logger;
     }
 
-    public async Task<List<LlmRecommendationDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
+    public async Task<List<LlmRecommendationDTO>> RecommendForUserAsync(
+        int userId,
+        int top = 10,
+        int? holdOutMovieId = null
+    )
     {
-        var userReviews = await _context.Reviews
-            .Include(r => r.Movie)
+        var userReviews = await _context
+            .Reviews.Include(r => r.Movie)
                 .ThenInclude(m => m.Director)
             .Include(r => r.Movie)
                 .ThenInclude(m => m.MovieGenres)
@@ -46,8 +51,8 @@ public class LlmRecommendationService : ILlmRecommendationService
 
         var ratedMovieIds = userReviews.Select(r => r.MovieId).ToHashSet();
 
-        var watchlistedMovieIds = await _context.Watchlists
-            .Where(w => w.UserId == userId)
+        var watchlistedMovieIds = await _context
+            .Watchlists.Where(w => w.UserId == userId)
             .SelectMany(w => w.WatchlistMovies.Select(wm => wm.MovieId))
             .ToListAsync();
 
@@ -55,8 +60,8 @@ public class LlmRecommendationService : ILlmRecommendationService
         if (holdOutMovieId.HasValue)
             excludedIds.Remove(holdOutMovieId.Value);
 
-        var candidates = await _context.Movies
-            .Include(m => m.Director)
+        var candidates = await _context
+            .Movies.Include(m => m.Director)
             .Include(m => m.MovieGenres)
                 .ThenInclude(mg => mg.Genre)
             .Include(m => m.MovieActors)
@@ -76,32 +81,41 @@ public class LlmRecommendationService : ILlmRecommendationService
         var candidatesJson = BuildCandidatesJson(candidates);
 
         _logger.LogInformation(
-            "Built profile for user {UserId}: {ReviewCount} reviews, {CandidateCount} candidates",
-            userId, userReviews.Count, candidates.Count);
+            "Built profile for user {UserId}: {ReviewCount} reviews, {CandidateCount} candidates (Llama)",
+            userId,
+            userReviews.Count,
+            candidates.Count
+        );
 
         var systemPrompt =
-            "You are a movie recommendation expert. " +
-            "Given a user's taste profile and a list of candidate movies, " +
-            "score each candidate from 0 to 10 based on predicted user enjoyment. " +
-            "Return ONLY a valid JSON array with no additional text, markdown, or explanation.";
+            "You are a movie recommendation expert. "
+            + "You will receive a user taste profile and a list of candidate movies. "
+            + "You MUST score EVERY candidate movie from 0 to 10 based on predicted user enjoyment. "
+            + "You MUST return a JSON object with a \"recommendations\" key containing an array. "
+            + "Each element MUST have exactly three fields: \"movieId\" (integer), \"score\" (number 0-10), \"reason\" (string). "
+            + "Example format: {\"recommendations\": [{\"movieId\": 123, \"score\": 8.5, \"reason\": \"Great match for user taste\"}, {\"movieId\": 456, \"score\": 6.0, \"reason\": \"Decent genre fit\"}]}";
 
         var userMessage = new StringBuilder();
-        userMessage.AppendLine("## User Taste Profile");
+        userMessage.AppendLine("User Taste Profile:");
         userMessage.AppendLine(userProfile);
         userMessage.AppendLine();
-        userMessage.AppendLine("## Candidate Movies");
+        userMessage.AppendLine("Candidate Movies:");
         userMessage.AppendLine(candidatesJson);
         userMessage.AppendLine();
         userMessage.AppendLine(
-            "Return a JSON array only — no markdown, no text before or after: " +
-            "[{\"movieId\": 1, \"score\": 8.5, \"reason\": \"one or two sentence explanation\"}, ...]");
+            $"Score ALL {candidates.Count} candidate movies. "
+                + "Return a JSON object: {\"recommendations\": [{\"movieId\": <id>, \"score\": <0-10>, \"reason\": \"<explanation>\"}, ...]}. "
+                + "Include every candidate movie in the array."
+        );
 
-        var claudeResponse = await _claudeApiService.SendMessageAsync(
-            systemPrompt, userMessage.ToString());
+        var llamaResponse = await _llamaApiService.SendMessageAsync(
+            systemPrompt,
+            userMessage.ToString()
+        );
 
-        _logger.LogInformation("Received Claude response for user {UserId}", userId);
+        _logger.LogInformation("Received Llama response for user {UserId}", userId);
 
-        return ParseClaudeResponse(claudeResponse, candidates, top);
+        return ParseLlamaResponse(llamaResponse, candidates, top);
     }
 
     private string BuildUserProfile(List<Review> userReviews)
@@ -157,28 +171,60 @@ public class LlmRecommendationService : ILlmRecommendationService
             genres = m.MovieGenres.Select(mg => mg.Genre.Name).ToList(),
             overview = m.Overview.Length > 200 ? m.Overview[..200] + "..." : m.Overview,
             averageRating = m.AverageRating,
-            releaseYear = m.ReleaseDate.Year
+            releaseYear = m.ReleaseDate.Year,
         });
 
         return JsonSerializer.Serialize(items);
     }
 
-    private List<LlmRecommendationDTO> ParseClaudeResponse(
-        string response, List<Movie> candidates, int top)
+    private List<LlmRecommendationDTO> ParseLlamaResponse(
+        string response,
+        List<Movie> candidates,
+        int top
+    )
     {
         var json = ExtractJson(response);
         var candidateDict = candidates.ToDictionary(m => m.Id);
 
-        List<ClaudeRecommendationItem> scoredItems;
+        List<LlamaRecommendationItem> scoredItems;
         try
         {
-            scoredItems = JsonSerializer.Deserialize<List<ClaudeRecommendationItem>>(json)
-                ?? new List<ClaudeRecommendationItem>();
+            using var doc = JsonDocument.Parse(json);
+            if (
+                doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("recommendations", out var recsElement)
+            )
+            {
+                scoredItems =
+                    JsonSerializer.Deserialize<List<LlamaRecommendationItem>>(
+                        recsElement.GetRawText()
+                    ) ?? [];
+            }
+            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                scoredItems = JsonSerializer.Deserialize<List<LlamaRecommendationItem>>(json) ?? [];
+            }
+            else
+            {
+                scoredItems = [];
+                foreach (
+                    var prop in doc
+                        .RootElement.EnumerateObject()
+                        .Where(prop => prop.Value.ValueKind == JsonValueKind.Array)
+                )
+                {
+                    scoredItems =
+                        JsonSerializer.Deserialize<List<LlamaRecommendationItem>>(
+                            prop.Value.GetRawText()
+                        ) ?? [];
+                    break;
+                }
+            }
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse Claude JSON response: {Response}", response);
-            throw new InvalidOperationException("Claude returned an invalid JSON response.", ex);
+            _logger.LogError(ex, "Failed to parse Llama JSON response: {Response}", response);
+            throw new InvalidOperationException("Llama returned an invalid JSON response.", ex);
         }
 
         return scoredItems
@@ -189,7 +235,7 @@ public class LlmRecommendationService : ILlmRecommendationService
             {
                 Movie = _mapper.Map<MovieDTO>(candidateDict[item.MovieId]),
                 Score = item.Score,
-                Reason = item.Reason
+                Reason = item.Reason,
             })
             .ToList();
     }
@@ -209,7 +255,7 @@ public class LlmRecommendationService : ILlmRecommendationService
         return response;
     }
 
-    private sealed class ClaudeRecommendationItem
+    private sealed class LlamaRecommendationItem
     {
         [JsonPropertyName("movieId")]
         public int MovieId { get; set; }

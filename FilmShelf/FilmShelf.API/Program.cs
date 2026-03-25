@@ -125,8 +125,17 @@ builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddScoped<IContentBasedRecommendationService, ContentBasedRecommendationService>();
 builder.Services.AddScoped<ICollaborativeRecommendationService, CollaborativeRecommendationService>();
 builder.Services.Configure<ClaudeSettings>(builder.Configuration.GetSection("Claude"));
-builder.Services.AddHttpClient<IClaudeApiService, ClaudeApiService>();
+builder.Services.AddHttpClient<IClaudeApiService, ClaudeApiService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(300);
+});
 builder.Services.AddScoped<ILlmRecommendationService, LlmRecommendationService>();
+builder.Services.Configure<LlamaSettings>(builder.Configuration.GetSection("Llama"));
+builder.Services.AddHttpClient<ILlamaApiService, LlamaApiService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(600);
+});
+builder.Services.AddScoped<ILlamaRecommendationService, LlamaRecommendationService>();
 builder.Services.Configure<AzureOpenAiSettings>(builder.Configuration.GetSection("AzureOpenAi"));
 builder.Services.Configure<AzureSearchSettings>(builder.Configuration.GetSection("AzureSearch"));
 builder.Services.AddScoped<IAzureEmbeddingService, AzureEmbeddingService>();

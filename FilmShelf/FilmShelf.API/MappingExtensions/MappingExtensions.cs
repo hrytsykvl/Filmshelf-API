@@ -303,7 +303,8 @@ public static class MappingExtensions
         {
             K = vm.K,
             MinReviews = vm.MinReviews,
-            RelevanceThreshold = vm.RelevanceThreshold
+            RelevanceThreshold = vm.RelevanceThreshold,
+            LlmMaxUsers = vm.LlmMaxUsers
         };
     }
 

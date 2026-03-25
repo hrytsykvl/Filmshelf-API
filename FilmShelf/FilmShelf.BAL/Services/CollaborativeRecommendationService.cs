@@ -32,7 +32,7 @@ public class CollaborativeRecommendationService : ICollaborativeRecommendationSe
         _logger = logger;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10)
+    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
     {
         var allRatings = await _context
             .Reviews.Select(r => new
@@ -45,7 +45,10 @@ public class CollaborativeRecommendationService : ICollaborativeRecommendationSe
 
         var userRatings = allRatings
             .GroupBy(r => r.UserId)
-            .ToDictionary(g => g.Key, g => g.ToDictionary(r => r.MovieId, r => (float)r.Rating));
+            .ToDictionary(
+                g => g.Key,
+                g => g.GroupBy(r => r.MovieId)
+                       .ToDictionary(mg => mg.Key, mg => (float)mg.Last().Rating));
 
         if (!userRatings.TryGetValue(userId, out var targetRatings))
             return new List<MovieDTO>();
@@ -80,6 +83,8 @@ public class CollaborativeRecommendationService : ICollaborativeRecommendationSe
         // Predict ratings for movies seen by neighbors but not by target user
         // Formula: predicted = mean_target + sum(sim_i * (r_ij - mean_i)) / sum(|sim_i|)
         var ratedByTarget = targetRatings.Keys.ToHashSet();
+        if (holdOutMovieId.HasValue)
+            ratedByTarget.Remove(holdOutMovieId.Value);
         var candidateScores = new Dictionary<int, (float WeightedSum, float WeightSum)>();
 
         foreach (var (neighborId, similarity) in neighbors)
