@@ -242,12 +242,12 @@ public class MovieController : ControllerBase
                 return NotFound();
 
             return Ok(_mapper.Map<List<MovieResponseVM>>(mlMovies));
-            //var llmRecs = await _llmRecommendationService.RecommendForUserAsync(userId);
+            var llmRecs = await _llmRecommendationService.RecommendForUserAsync(userId);
 
-            //if (!llmRecs.Any())
-            //    return NotFound();
+            if (!llmRecs.Any())
+                return NotFound();
 
-            //return Ok(llmRecs.Select(r => r.ToLlmRecommendationVM()));
+            return Ok(llmRecs.Select(r => r.ToLlmRecommendationVM()));
         }
         catch (Exception ex)
         {
@@ -277,6 +277,35 @@ public class MovieController : ControllerBase
     {
         await _movieIndexService.IndexMoviesAsync();
         return NoContent();
+    }
+
+    /// <summary>
+    /// Get LLM-based movie recommendations with per-movie reasoning.
+    /// Supported providers: claude (default), ollama.
+    /// </summary>
+    [HttpGet("recommendations/llm")]
+    [Authorize]
+    [ProducesResponseType(typeof(List<LlmRecommendationVM>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetLlmRecommendations([FromQuery] string provider = "claude")
+    {
+        var userId = UserClaimsHelper.GetUserId(User);
+
+        List<LlmRecommendationDTO> recs;
+
+        if (provider.Equals("ollama", StringComparison.OrdinalIgnoreCase))
+        {
+            recs = await _llamaRecommendationService.RecommendForUserAsync(userId);
+        }
+        else
+        {
+            recs = await _llmRecommendationService.RecommendForUserAsync(userId);
+        }
+
+        if (!recs.Any())
+            return NotFound();
+
+        return Ok(recs.Select(r => r.ToLlmRecommendationVM()));
     }
 
     /// <summary>
