@@ -9,7 +9,7 @@ env:
   ACR_NAME: filmshelfacr
   ACR_LOGIN_SERVER: filmshelfacr.azurecr.io
   IMAGE_NAME: filmshelf-api
-  RESOURCE_GROUP: filmshelf-rg
+  RESOURCE_GROUP: filmshelf
   CONTAINER_APP_NAME: filmshelf-api
 
 jobs:
