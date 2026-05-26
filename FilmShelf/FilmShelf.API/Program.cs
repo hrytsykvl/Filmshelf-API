@@ -28,9 +28,18 @@ using System.Text;
 using FilmShelf.API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using FilmShelf.BAL.MappingExtensions;
+using Azure.Identity;
 using FilmShelf.API.MappingExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+if (!string.IsNullOrEmpty(keyVaultUrl))
+{
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUrl),
+        new DefaultAzureCredential());
+}
 
 // Add services to the container.
 builder.Host.UseSerilog((context, configuration) =>
