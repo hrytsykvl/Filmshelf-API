@@ -1,115 +1,120 @@
-﻿using FilmShelf.API.Middlewares;
+﻿using System.Reflection;
+using System.Text;
+using Azure.Identity;
+using FilmShelf.API.Hubs;
+using FilmShelf.API.MappingExtensions;
+using FilmShelf.API.Middlewares;
 using FilmShelf.API.VMs.Validators;
 using FilmShelf.API.Workers;
 using FilmShelf.BAL.Helpers;
 using FilmShelf.BAL.Interfaces;
+using FilmShelf.BAL.MappingExtensions;
 using FilmShelf.BAL.Options;
 using FilmShelf.BAL.Services;
 using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Identity;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.DAL.Repositories;
-using FilmShelf.TMDbClient.Options;
 using FilmShelf.TMDbClient.Extensions;
+using FilmShelf.TMDbClient.Options;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RestSharp;
 using Serilog;
-using System.Reflection;
-using System.Text;
-using FilmShelf.API.Hubs;
-using Microsoft.AspNetCore.SignalR;
-using FilmShelf.BAL.MappingExtensions;
-using Azure.Identity;
-using FilmShelf.API.MappingExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var keyVaultUrl = builder.Configuration["KeyVault:Url"];
 if (!string.IsNullOrEmpty(keyVaultUrl))
 {
-    builder.Configuration.AddAzureKeyVault(
-        new Uri(keyVaultUrl),
-        new DefaultAzureCredential());
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 }
 
 // Add services to the container.
-builder.Host.UseSerilog((context, configuration) =>
-    configuration.ReadFrom.Configuration(context.Configuration));
+builder.Host.UseSerilog(
+    (context, configuration) => configuration.ReadFrom.Configuration(context.Configuration)
+);
 
 builder.Services.AddControllers();
-builder.Services.AddFluentValidationAutoValidation()
+builder
+    .Services.AddFluentValidationAutoValidation()
     .AddFluentValidationClientsideAdapters()
     .AddValidatorsFromAssemblyContaining<LoginVMValidator>();
 
 builder.Services.AddDbContext<FilmsDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection"),
-        sqlOptions => sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DbConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
+    )
+);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1",
-        new OpenApiInfo 
-        { 
-            Title = "FilmShelf.API",
-            Version = "v1" 
-        });
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "FilmShelf.API", Version = "v1" });
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme 
-    {
-        In = ParameterLocation.Header,
-        Description = "Please insert JWT with Bearer into field",
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        BearerFormat = "JWT",
-        Scheme = "bearer"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { 
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] { }
-        }
-    });
-
-    options.MapType<ProblemDetails>(() => new OpenApiSchema
-    {
-        Type = "object",
-        Properties = new Dictionary<string, OpenApiSchema>
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
         {
-            ["title"] = new OpenApiSchema { Type = "string" },
-            ["status"] = new OpenApiSchema { Type = "integer", Format = "int32" },
-            ["errors"] = new OpenApiSchema
-            {
-                Type = "object",
-                AdditionalProperties = new OpenApiSchema
-                {
-                    Type = "array",
-                    Items = new OpenApiSchema { Type = "string" }
-                }
-            }
+            In = ParameterLocation.Header,
+            Description = "Please insert JWT with Bearer into field",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            BearerFormat = "JWT",
+            Scheme = "bearer",
         }
-    });
+    );
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer",
+                    },
+                },
+                new string[] { }
+            },
+        }
+    );
+
+    options.MapType<ProblemDetails>(() =>
+        new OpenApiSchema
+        {
+            Type = "object",
+            Properties = new Dictionary<string, OpenApiSchema>
+            {
+                ["title"] = new OpenApiSchema { Type = "string" },
+                ["status"] = new OpenApiSchema { Type = "integer", Format = "int32" },
+                ["errors"] = new OpenApiSchema
+                {
+                    Type = "object",
+                    AdditionalProperties = new OpenApiSchema
+                    {
+                        Type = "array",
+                        Items = new OpenApiSchema { Type = "string" },
+                    },
+                },
+            },
+        }
+    );
 });
 
 builder.Services.AddSignalR();
@@ -132,7 +137,10 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddScoped<IContentBasedRecommendationService, ContentBasedRecommendationService>();
-builder.Services.AddScoped<ICollaborativeRecommendationService, CollaborativeRecommendationService>();
+builder.Services.AddScoped<
+    ICollaborativeRecommendationService,
+    CollaborativeRecommendationService
+>();
 builder.Services.Configure<ClaudeSettings>(builder.Configuration.GetSection("Claude"));
 builder.Services.AddHttpClient<IClaudeApiService, ClaudeApiService>(client =>
 {
@@ -171,72 +179,81 @@ builder.Services.AddSingleton(provider =>
     return new RestClient(options);
 });
 
-builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
-{
-    options.Password.RequiredLength = 5;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireDigit = true;
-    options.User.AllowedUserNameCharacters = null;
-})
-.AddEntityFrameworkStores<FilmsDbContext>()
-.AddDefaultTokenProviders()
-.AddUserStore<UserStore<ApplicationUser, ApplicationRole, FilmsDbContext, int>>()
-.AddRoleStore<RoleStore<ApplicationRole, FilmsDbContext, int>>();
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddGoogle(googleOptions =>
-{
-    googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
-    googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters()
+builder
+    .Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
     {
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
-        ClockSkew = TimeSpan.Zero
-    };
+        options.Password.RequiredLength = 5;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireDigit = true;
+        options.User.AllowedUserNameCharacters = null;
+    })
+    .AddEntityFrameworkStores<FilmsDbContext>()
+    .AddDefaultTokenProviders()
+    .AddUserStore<UserStore<ApplicationUser, ApplicationRole, FilmsDbContext, int>>()
+    .AddRoleStore<RoleStore<ApplicationRole, FilmsDbContext, int>>();
 
-    options.Events = new JwtBearerEvents
+builder
+    .Services.AddAuthentication(options =>
     {
-        OnMessageReceived = context =>
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddGoogle(googleOptions =>
+    {
+        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters()
         {
-            var accessToken = context.Request.Query["access_token"];
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+            ClockSkew = TimeSpan.Zero,
+        };
 
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/notification")))
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                context.Token = accessToken;
-            }
-            return Task.CompletedTask;
-        }
-    };
-});
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+                if (
+                    !string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/notification"))
+                )
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
+        };
+    });
 
 builder.Services.AddAutoMapper(typeof(MappingProfile), typeof(MappingProfileVM));
 
+const string corsPolicy = "FilmShelfUi";
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policyBuilder =>
-    {
-        policyBuilder
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
+    options.AddPolicy(
+        corsPolicy,
+        policy =>
+        {
+            var allowedOrigins =
+                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+            policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+        }
+    );
 });
 
 var app = builder.Build();
@@ -255,16 +272,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseCors(x => x.WithOrigins(builder.Configuration["Jwt:Audience"]!)
-    .AllowCredentials()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
+app.UseCors(corsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
