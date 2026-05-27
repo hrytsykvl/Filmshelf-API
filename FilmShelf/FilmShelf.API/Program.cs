@@ -28,6 +28,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using RestSharp;
 using Serilog;
 
@@ -43,6 +44,8 @@ if (!string.IsNullOrEmpty(keyVaultUrl))
 builder.Host.UseSerilog(
     (context, configuration) => configuration.ReadFrom.Configuration(context.Configuration)
 );
+
+builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddControllers();
 builder
