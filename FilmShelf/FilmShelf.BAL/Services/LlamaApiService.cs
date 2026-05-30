@@ -31,7 +31,10 @@ public class LlamaApiService : ILlamaApiService
         if (_llamaSettings.UseAzureOpenAi)
         {
             var s = azureSettings.Value;
-            var client = new AzureOpenAIClient(new Uri(s.Endpoint), new AzureKeyCredential(s.ApiKey));
+            var client = new AzureOpenAIClient(
+                new Uri(s.Endpoint),
+                new AzureKeyCredential(s.ApiKey)
+            );
             _chatClient = client.GetChatClient(s.ChatDeploymentName);
         }
     }
@@ -48,18 +51,13 @@ public class LlamaApiService : ILlamaApiService
     {
         var options = new ChatCompletionOptions
         {
-            Temperature = 0.3f,
-            MaxOutputTokenCount = 4096,
-            ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat()
+            ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat(),
         };
 
         _logger.LogInformation("Sending request to Azure OpenAI chat deployment");
 
         var response = await _chatClient!.CompleteChatAsync(
-            [
-                new SystemChatMessage(systemPrompt),
-                new UserChatMessage(userMessage)
-            ],
+            [new SystemChatMessage(systemPrompt), new UserChatMessage(userMessage)],
             options
         );
 
@@ -78,11 +76,7 @@ public class LlamaApiService : ILlamaApiService
             },
             stream = false,
             format = "json",
-            options = new
-            {
-                temperature = 0.3,
-                num_predict = 4096
-            }
+            options = new { temperature = 0.3, num_predict = 4096 },
         };
 
         var url = $"{_llamaSettings.BaseUrl.TrimEnd('/')}/api/chat";
@@ -94,7 +88,10 @@ public class LlamaApiService : ILlamaApiService
             "application/json"
         );
 
-        _logger.LogInformation("Sending request to Ollama with model {Model}", _llamaSettings.Model);
+        _logger.LogInformation(
+            "Sending request to Ollama with model {Model}",
+            _llamaSettings.Model
+        );
 
         var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();

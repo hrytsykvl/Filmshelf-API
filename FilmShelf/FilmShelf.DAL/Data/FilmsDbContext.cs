@@ -21,6 +21,7 @@ public class FilmsDbContext : IdentityDbContext<ApplicationUser, ApplicationRole
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<ReviewNotification> ReviewNotifications { get; set; }
+    public DbSet<LlmRecommendationCache> LlmRecommendationCaches { get; set; }
 
     public FilmsDbContext(DbContextOptions<FilmsDbContext> options) : base(options)
     {

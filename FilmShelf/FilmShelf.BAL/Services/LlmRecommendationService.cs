@@ -30,8 +30,20 @@ public class LlmRecommendationService : ILlmRecommendationService
         _logger = logger;
     }
 
+    private const string ProviderName = "claude";
+
     public async Task<List<LlmRecommendationDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
     {
+        if (!holdOutMovieId.HasValue)
+        {
+            var cached = await GetCachedRecommendationsAsync(userId);
+            if (cached != null)
+            {
+                _logger.LogInformation("Returning cached Claude recommendations for user {UserId}", userId);
+                return cached;
+            }
+        }
+
         var userReviews = await _context.Reviews
             .Include(r => r.Movie)
                 .ThenInclude(m => m.Director)
@@ -101,7 +113,12 @@ public class LlmRecommendationService : ILlmRecommendationService
 
         _logger.LogInformation("Received Claude response for user {UserId}", userId);
 
-        return ParseClaudeResponse(claudeResponse, candidates, top);
+        var results = ParseClaudeResponse(claudeResponse, candidates, top);
+
+        if (!holdOutMovieId.HasValue)
+            await SaveCacheAsync(userId, results);
+
+        return results;
     }
 
     private string BuildUserProfile(List<Review> userReviews)
@@ -207,6 +224,38 @@ public class LlmRecommendationService : ILlmRecommendationService
         }
 
         return response;
+    }
+
+    private async Task<List<LlmRecommendationDTO>?> GetCachedRecommendationsAsync(int userId)
+    {
+        var cache = await _context.LlmRecommendationCaches
+            .Where(c => c.UserId == userId && c.Provider == ProviderName)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (cache == null || cache.CreatedAt < DateTime.UtcNow.AddHours(-24))
+            return null;
+
+        return JsonSerializer.Deserialize<List<LlmRecommendationDTO>>(cache.ResponseJson);
+    }
+
+    private async Task SaveCacheAsync(int userId, List<LlmRecommendationDTO> results)
+    {
+        var existing = await _context.LlmRecommendationCaches
+            .Where(c => c.UserId == userId && c.Provider == ProviderName)
+            .ToListAsync();
+
+        _context.LlmRecommendationCaches.RemoveRange(existing);
+
+        _context.LlmRecommendationCaches.Add(new LlmRecommendationCache
+        {
+            UserId = userId,
+            Provider = ProviderName,
+            ResponseJson = JsonSerializer.Serialize(results),
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
     }
 
     private sealed class ClaudeRecommendationItem

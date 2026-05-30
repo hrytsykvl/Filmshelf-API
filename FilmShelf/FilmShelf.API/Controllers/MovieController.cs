@@ -236,12 +236,6 @@ public class MovieController : ControllerBase
 
         try
         {
-            var mlMovies = await _recommendationService.RecommendForUser(userId);
-
-            if (mlMovies == null || !mlMovies.Any())
-                return NotFound();
-
-            return Ok(_mapper.Map<List<MovieResponseVM>>(mlMovies));
             var llmRecs = await _llmRecommendationService.RecommendForUserAsync(userId);
 
             if (!llmRecs.Any())
