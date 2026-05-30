@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text;
 using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using FilmShelf.API.Hubs;
 using FilmShelf.API.MappingExtensions;
 using FilmShelf.API.Middlewares;
@@ -28,7 +29,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Azure.Monitor.OpenTelemetry.AspNetCore;
 using RestSharp;
 using Serilog;
 
