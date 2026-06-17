@@ -4,5 +4,5 @@ namespace FilmShelf.BAL.Interfaces;
 
 public interface IRecommendationService
 {
-    Task<List<MovieDTO>> RecommendForUser(int userId, int? holdOutMovieId = null);
+    Task<List<MovieDTO>> RecommendForUser(int userId, int? holdOutMovieId = null, string language = "en-US");
 }

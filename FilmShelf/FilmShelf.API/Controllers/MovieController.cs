@@ -176,13 +176,15 @@ public class MovieController : ControllerBase
     /// </summary>
     [HttpGet("recommendations")]
     [Authorize]
-    public async Task<IActionResult> GetMovieRecommendations([FromQuery] string method = "llm")
+    public async Task<IActionResult> GetMovieRecommendations(
+        [FromQuery] string method = "llm",
+        [FromQuery(Name = "language")] string language = "en-US")
     {
         var userId = UserClaimsHelper.GetUserId(User);
 
         if (method.Equals("ml", StringComparison.OrdinalIgnoreCase))
         {
-            var mlMovies = await _recommendationService.RecommendForUser(userId);
+            var mlMovies = await _recommendationService.RecommendForUser(userId, language: language);
 
             if (mlMovies == null || !mlMovies.Any())
                 return NotFound();
@@ -193,7 +195,7 @@ public class MovieController : ControllerBase
         if (method.Equals("content", StringComparison.OrdinalIgnoreCase))
         {
             var contentMovies = await _contentBasedRecommendationService.RecommendForUserAsync(
-                userId
+                userId, language: language
             );
 
             if (!contentMovies.Any())
@@ -204,7 +206,7 @@ public class MovieController : ControllerBase
 
         if (method.Equals("user-cf", StringComparison.OrdinalIgnoreCase))
         {
-            var cfMovies = await _collaborativeRecommendationService.RecommendForUserAsync(userId);
+            var cfMovies = await _collaborativeRecommendationService.RecommendForUserAsync(userId, language: language);
 
             if (!cfMovies.Any())
                 return NotFound();
@@ -215,7 +217,7 @@ public class MovieController : ControllerBase
         if (method.Equals("embedding", StringComparison.OrdinalIgnoreCase))
         {
             var embeddingMovies = await _embeddingRecommendationService.RecommendForUserAsync(
-                userId
+                userId, language: language
             );
 
             if (!embeddingMovies.Any())
@@ -226,7 +228,7 @@ public class MovieController : ControllerBase
 
         if (method.Equals("llama", StringComparison.OrdinalIgnoreCase))
         {
-            var llamaRecs = await _llamaRecommendationService.RecommendForUserAsync(userId);
+            var llamaRecs = await _llamaRecommendationService.RecommendForUserAsync(userId, language: language);
 
             if (!llamaRecs.Any())
                 return NotFound();
@@ -236,7 +238,7 @@ public class MovieController : ControllerBase
 
         try
         {
-            var llmRecs = await _llmRecommendationService.RecommendForUserAsync(userId);
+            var llmRecs = await _llmRecommendationService.RecommendForUserAsync(userId, language: language);
 
             if (!llmRecs.Any())
                 return NotFound();
@@ -251,7 +253,7 @@ public class MovieController : ControllerBase
                 userId
             );
 
-            var mlMovies = await _recommendationService.RecommendForUser(userId);
+            var mlMovies = await _recommendationService.RecommendForUser(userId, language: language);
 
             if (mlMovies == null || !mlMovies.Any())
                 return NotFound();
@@ -281,7 +283,9 @@ public class MovieController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(List<LlmRecommendationVM>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetLlmRecommendations([FromQuery] string provider = "claude")
+    public async Task<IActionResult> GetLlmRecommendations(
+        [FromQuery] string provider = "claude",
+        [FromQuery(Name = "language")] string language = "en-US")
     {
         var userId = UserClaimsHelper.GetUserId(User);
 
@@ -289,11 +293,11 @@ public class MovieController : ControllerBase
 
         if (provider.Equals("ollama", StringComparison.OrdinalIgnoreCase))
         {
-            recs = await _llamaRecommendationService.RecommendForUserAsync(userId);
+            recs = await _llamaRecommendationService.RecommendForUserAsync(userId, language: language);
         }
         else
         {
-            recs = await _llmRecommendationService.RecommendForUserAsync(userId);
+            recs = await _llmRecommendationService.RecommendForUserAsync(userId, language: language);
         }
 
         if (!recs.Any())
@@ -308,12 +312,13 @@ public class MovieController : ControllerBase
     [HttpGet("recommendations/compare")]
     [Authorize]
     [ProducesResponseType(typeof(ComparisonResultVM), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetRecommendationsComparison()
+    public async Task<IActionResult> GetRecommendationsComparison(
+        [FromQuery(Name = "language")] string language = "en-US")
     {
         var userId = UserClaimsHelper.GetUserId(User);
 
-        var mlTask = _recommendationService.RecommendForUser(userId);
-        var llmTask = _llmRecommendationService.RecommendForUserAsync(userId);
+        var mlTask = _recommendationService.RecommendForUser(userId, language: language);
+        var llmTask = _llmRecommendationService.RecommendForUserAsync(userId, language: language);
 
         await Task.WhenAll(mlTask, llmTask);
 
@@ -333,16 +338,17 @@ public class MovieController : ControllerBase
     [HttpGet("recommendations/compare-llm")]
     [Authorize]
     [ProducesResponseType(typeof(LlmComparisonResultVM), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLlmComparison()
+    public async Task<IActionResult> GetLlmComparison(
+        [FromQuery(Name = "language")] string language = "en-US")
     {
         var userId = UserClaimsHelper.GetUserId(User);
 
         var claudeSw = Stopwatch.StartNew();
-        var claudeRecs = await _llmRecommendationService.RecommendForUserAsync(userId);
+        var claudeRecs = await _llmRecommendationService.RecommendForUserAsync(userId, language: language);
         claudeSw.Stop();
 
         var llamaSw = Stopwatch.StartNew();
-        var llamaRecs = await _llamaRecommendationService.RecommendForUserAsync(userId);
+        var llamaRecs = await _llamaRecommendationService.RecommendForUserAsync(userId, language: language);
         llamaSw.Stop();
 
         var result = new LlmComparisonResultVM

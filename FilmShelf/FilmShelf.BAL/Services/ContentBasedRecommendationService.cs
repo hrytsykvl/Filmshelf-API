@@ -3,6 +3,7 @@ using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Entities;
+using FilmShelf.TMDbClient.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -13,19 +14,22 @@ public class ContentBasedRecommendationService : IContentBasedRecommendationServ
     private readonly FilmsDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<ContentBasedRecommendationService> _logger;
+    private readonly IMovieService _movieService;
 
     public ContentBasedRecommendationService(
         FilmsDbContext context,
         IMapper mapper,
-        ILogger<ContentBasedRecommendationService> logger
+        ILogger<ContentBasedRecommendationService> logger,
+        IMovieService movieService
     )
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _movieService = movieService;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
+    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null, string language = LanguageConstants.English)
     {
         var userReviews = await _context
             .Reviews.Where(r => r.UserId == userId)
@@ -90,6 +94,9 @@ public class ContentBasedRecommendationService : IContentBasedRecommendationServ
             userId,
             featureCount
         );
+
+        if (language != LanguageConstants.English)
+            return await _movieService.GetLocalizedMoviesAsync(candidates.Select(m => m.Id), language);
 
         return _mapper.Map<List<MovieDTO>>(candidates);
     }

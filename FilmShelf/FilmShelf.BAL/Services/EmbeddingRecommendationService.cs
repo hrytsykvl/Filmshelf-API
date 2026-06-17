@@ -8,6 +8,7 @@ using FilmShelf.BAL.Interfaces;
 using FilmShelf.BAL.Options;
 using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Entities;
+using FilmShelf.TMDbClient.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -21,13 +22,15 @@ public class EmbeddingRecommendationService : IEmbeddingRecommendationService
     private readonly AzureSearchSettings _searchSettings;
     private readonly IMapper _mapper;
     private readonly ILogger<EmbeddingRecommendationService> _logger;
+    private readonly IMovieService _movieService;
 
     public EmbeddingRecommendationService(
         FilmsDbContext context,
         IAzureEmbeddingService embeddingService,
         IOptions<AzureSearchSettings> searchOptions,
         IMapper mapper,
-        ILogger<EmbeddingRecommendationService> logger
+        ILogger<EmbeddingRecommendationService> logger,
+        IMovieService movieService
     )
     {
         _context = context;
@@ -35,9 +38,10 @@ public class EmbeddingRecommendationService : IEmbeddingRecommendationService
         _searchSettings = searchOptions.Value;
         _mapper = mapper;
         _logger = logger;
+        _movieService = movieService;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
+    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null, string language = LanguageConstants.English)
     {
         var userReviews = await _context
             .Reviews.Include(r => r.Movie)
@@ -125,6 +129,9 @@ public class EmbeddingRecommendationService : IEmbeddingRecommendationService
             .ToListAsync();
 
         // Preserve vector search ranking order
+        if (language != LanguageConstants.English)
+            return await _movieService.GetLocalizedMoviesAsync(recommendedMovieIds, language);
+
         return recommendedMovieIds
             .Select(id => movies.FirstOrDefault(m => m.Id == id))
             .Where(m => m != null)

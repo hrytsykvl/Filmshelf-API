@@ -2,6 +2,7 @@ using AutoMapper;
 using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.DAL.Data;
+using FilmShelf.TMDbClient.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -20,19 +21,22 @@ public class CollaborativeRecommendationService : ICollaborativeRecommendationSe
     private readonly FilmsDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<CollaborativeRecommendationService> _logger;
+    private readonly IMovieService _movieService;
 
     public CollaborativeRecommendationService(
         FilmsDbContext context,
         IMapper mapper,
-        ILogger<CollaborativeRecommendationService> logger
+        ILogger<CollaborativeRecommendationService> logger,
+        IMovieService movieService
     )
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _movieService = movieService;
     }
 
-    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
+    public async Task<List<MovieDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null, string language = LanguageConstants.English)
     {
         var allRatings = await _context
             .Reviews.Select(r => new
@@ -128,6 +132,9 @@ public class CollaborativeRecommendationService : ICollaborativeRecommendationSe
             userId,
             neighbors.Count
         );
+
+        if (language != LanguageConstants.English)
+            return await _movieService.GetLocalizedMoviesAsync(topMovieIds, language);
 
         return _mapper.Map<List<MovieDTO>>(movies);
     }

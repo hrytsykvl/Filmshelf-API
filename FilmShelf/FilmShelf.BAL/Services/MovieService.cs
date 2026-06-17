@@ -211,6 +211,29 @@ public class MovieService : IMovieService
         return result;
     }
 
+    public async Task<List<MovieDTO>> GetLocalizedMoviesAsync(IEnumerable<int> movieIds, string language)
+    {
+        var results = new List<MovieDTO>();
+
+        foreach (var id in movieIds)
+        {
+            var details = await _movieApiIntegrationService.FetchMovieDetailsAsync(id, language);
+            if (details != null)
+            {
+                results.Add(new MovieDTO
+                {
+                    Id = id,
+                    Title = details.Title,
+                    PosterPath = PhotoPathGenerator.GeneratePosterPath(details.PosterPath),
+                    AverageRating = details.AverageRating,
+                    ReleaseDate = details.ReleaseDate
+                });
+            }
+        }
+
+        return results;
+    }
+
     public async Task<List<MovieDTO>> SearchMovie(string searchQuery, string language = LanguageConstants.English)
     {
         var movies = await _movieApiIntegrationService

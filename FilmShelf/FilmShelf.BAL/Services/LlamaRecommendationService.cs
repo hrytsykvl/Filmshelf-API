@@ -6,6 +6,7 @@ using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Entities;
+using FilmShelf.TMDbClient.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -17,18 +18,21 @@ public class LlamaRecommendationService : ILlamaRecommendationService
     private readonly ILlamaApiService _llamaApiService;
     private readonly IMapper _mapper;
     private readonly ILogger<LlamaRecommendationService> _logger;
+    private readonly IMovieService _movieService;
 
     public LlamaRecommendationService(
         FilmsDbContext context,
         ILlamaApiService llamaApiService,
         IMapper mapper,
-        ILogger<LlamaRecommendationService> logger
+        ILogger<LlamaRecommendationService> logger,
+        IMovieService movieService
     )
     {
         _context = context;
         _llamaApiService = llamaApiService;
         _mapper = mapper;
         _logger = logger;
+        _movieService = movieService;
     }
 
     private const string ProviderName = "ollama";
@@ -36,10 +40,13 @@ public class LlamaRecommendationService : ILlamaRecommendationService
     public async Task<List<LlmRecommendationDTO>> RecommendForUserAsync(
         int userId,
         int top = 10,
-        int? holdOutMovieId = null
+        int? holdOutMovieId = null,
+        string language = LanguageConstants.English
     )
     {
-        if (!holdOutMovieId.HasValue)
+        var isDefaultLanguage = language == LanguageConstants.English;
+
+        if (!holdOutMovieId.HasValue && isDefaultLanguage)
         {
             var cached = await GetCachedRecommendationsAsync(userId);
             if (cached != null)
@@ -105,7 +112,8 @@ public class LlamaRecommendationService : ILlamaRecommendationService
             + "You MUST score EVERY candidate movie from 0 to 10 based on predicted user enjoyment. "
             + "You MUST return a JSON object with a \"recommendations\" key containing an array. "
             + "Each element MUST have exactly three fields: \"movieId\" (integer), \"score\" (number 0-10), \"reason\" (string). "
-            + "Example format: {\"recommendations\": [{\"movieId\": 123, \"score\": 8.5, \"reason\": \"Great match for user taste\"}, {\"movieId\": 456, \"score\": 6.0, \"reason\": \"Decent genre fit\"}]}";
+            + "Example format: {\"recommendations\": [{\"movieId\": 123, \"score\": 8.5, \"reason\": \"Great match for user taste\"}, {\"movieId\": 456, \"score\": 6.0, \"reason\": \"Decent genre fit\"}]}"
+            + (isDefaultLanguage ? "" : " Write all 'reason' field values in Ukrainian language.");
 
         var userMessage = new StringBuilder();
         userMessage.AppendLine("User Taste Profile:");
@@ -129,8 +137,11 @@ public class LlamaRecommendationService : ILlamaRecommendationService
 
         var results = ParseLlamaResponse(llamaResponse, candidates, top);
 
-        if (!holdOutMovieId.HasValue)
+        if (isDefaultLanguage && !holdOutMovieId.HasValue)
             await SaveCacheAsync(userId, results);
+
+        if (!isDefaultLanguage)
+            await LocalizeResultMoviesAsync(results, language);
 
         return results;
     }
@@ -255,6 +266,19 @@ public class LlamaRecommendationService : ILlamaRecommendationService
                 Reason = item.Reason,
             })
             .ToList();
+    }
+
+    private async Task LocalizeResultMoviesAsync(List<LlmRecommendationDTO> results, string language)
+    {
+        var ids = results.Select(r => r.Movie.Id).ToList();
+        var localized = await _movieService.GetLocalizedMoviesAsync(ids, language);
+        var localizedMap = localized.ToDictionary(m => m.Id);
+
+        foreach (var rec in results)
+        {
+            if (localizedMap.TryGetValue(rec.Movie.Id, out var localizedMovie))
+                rec.Movie = localizedMovie;
+        }
     }
 
     private static string ExtractJson(string response)

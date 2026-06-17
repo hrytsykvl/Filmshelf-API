@@ -3,6 +3,7 @@ using FilmShelf.BAL.DTOs;
 using FilmShelf.BAL.Interfaces;
 using FilmShelf.DAL.Data;
 using FilmShelf.DAL.Entities;
+using FilmShelf.TMDbClient.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text;
@@ -17,24 +18,29 @@ public class LlmRecommendationService : ILlmRecommendationService
     private readonly IClaudeApiService _claudeApiService;
     private readonly IMapper _mapper;
     private readonly ILogger<LlmRecommendationService> _logger;
+    private readonly IMovieService _movieService;
 
     public LlmRecommendationService(
         FilmsDbContext context,
         IClaudeApiService claudeApiService,
         IMapper mapper,
-        ILogger<LlmRecommendationService> logger)
+        ILogger<LlmRecommendationService> logger,
+        IMovieService movieService)
     {
         _context = context;
         _claudeApiService = claudeApiService;
         _mapper = mapper;
         _logger = logger;
+        _movieService = movieService;
     }
 
     private const string ProviderName = "claude";
 
-    public async Task<List<LlmRecommendationDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null)
+    public async Task<List<LlmRecommendationDTO>> RecommendForUserAsync(int userId, int top = 10, int? holdOutMovieId = null, string language = LanguageConstants.English)
     {
-        if (!holdOutMovieId.HasValue)
+        var isDefaultLanguage = language == LanguageConstants.English;
+
+        if (!holdOutMovieId.HasValue && isDefaultLanguage)
         {
             var cached = await GetCachedRecommendationsAsync(userId);
             if (cached != null)
@@ -95,7 +101,8 @@ public class LlmRecommendationService : ILlmRecommendationService
             "You are a movie recommendation expert. " +
             "Given a user's taste profile and a list of candidate movies, " +
             "score each candidate from 0 to 10 based on predicted user enjoyment. " +
-            "Return ONLY a valid JSON array with no additional text, markdown, or explanation.";
+            "Return ONLY a valid JSON array with no additional text, markdown, or explanation." +
+            (isDefaultLanguage ? "" : " Write all 'reason' field values in Ukrainian language.");
 
         var userMessage = new StringBuilder();
         userMessage.AppendLine("## User Taste Profile");
@@ -115,8 +122,11 @@ public class LlmRecommendationService : ILlmRecommendationService
 
         var results = ParseClaudeResponse(claudeResponse, candidates, top);
 
-        if (!holdOutMovieId.HasValue)
+        if (isDefaultLanguage && !holdOutMovieId.HasValue)
             await SaveCacheAsync(userId, results);
+
+        if (!isDefaultLanguage)
+            await LocalizeResultMoviesAsync(results, language);
 
         return results;
     }
@@ -209,6 +219,19 @@ public class LlmRecommendationService : ILlmRecommendationService
                 Reason = item.Reason
             })
             .ToList();
+    }
+
+    private async Task LocalizeResultMoviesAsync(List<LlmRecommendationDTO> results, string language)
+    {
+        var ids = results.Select(r => r.Movie.Id).ToList();
+        var localized = await _movieService.GetLocalizedMoviesAsync(ids, language);
+        var localizedMap = localized.ToDictionary(m => m.Id);
+
+        foreach (var rec in results)
+        {
+            if (localizedMap.TryGetValue(rec.Movie.Id, out var localizedMovie))
+                rec.Movie = localizedMovie;
+        }
     }
 
     private static string ExtractJson(string response)
