@@ -21,7 +21,7 @@ public class ActorController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActorDetailsById(ActorRequestVM actorRequestVM)
     {
-        var actor = await _actorService.GetActorDetailsAsync(actorRequestVM.Id);
+        var actor = await _actorService.GetActorDetailsAsync(actorRequestVM.Id, actorRequestVM.Language);
 
         if (actor == null)
         {

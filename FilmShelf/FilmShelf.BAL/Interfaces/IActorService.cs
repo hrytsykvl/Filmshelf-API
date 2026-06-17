@@ -4,5 +4,5 @@ namespace FilmShelf.BAL.Interfaces;
 
 public interface IActorService
 {
-    Task<ActorDetailsDTO?> GetActorDetailsAsync(int actorId);
+    Task<ActorDetailsDTO?> GetActorDetailsAsync(int actorId, string language = "en-US");
 }

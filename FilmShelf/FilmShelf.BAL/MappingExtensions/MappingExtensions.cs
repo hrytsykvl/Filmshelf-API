@@ -56,6 +56,29 @@ public static class MappingExtensions
         };
     }
 
+    public static ActorDetailsDTO ToActorDetailsDTOWithOverride(
+        this Actor actor,
+        string? bio,
+        DateTime birthDate)
+    {
+        return new ActorDetailsDTO
+        {
+            Name = actor.Name,
+            Bio = bio ?? actor.Bio ?? string.Empty,
+            BirthDate = birthDate,
+            ProfilePath = actor.ProfilePath,
+            Movies = actor.MovieActors
+                .Select(ma => new ActorMoviesDTO
+                {
+                    Id = ma.MovieId,
+                    Title = ma.Movie.Title,
+                    PosterPath = ma.Movie.PosterPath,
+                    Role = ma.Role
+                })
+                .ToList()
+        };
+    }
+
     public static ReviewDTO ToReviewDTO(
         this Review review)
     {

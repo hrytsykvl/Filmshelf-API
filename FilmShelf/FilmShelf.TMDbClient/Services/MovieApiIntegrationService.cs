@@ -21,27 +21,31 @@ internal class MovieApiIntegrationService : IMovieApiIntegrationService
         _restClient = restClient;
     }
 
-    public async Task<T?> FetchPersonDetailsAsync<T>(int personId)
+    public async Task<T?> FetchPersonDetailsAsync<T>(int personId, string language = "en-US")
     {
-        var request = CreateRequest($"person/{personId}");
+        var request = CreateRequest($"person/{personId}")
+            .AddQueryParameter("language", language);
         return await _restClient.GetAsync<T>(request);
     }
 
-    public async Task<MovieCreditsResponse?> FetchMovieCreditsAsync(int movieId)
+    public async Task<MovieCreditsResponse?> FetchMovieCreditsAsync(int movieId, string language = "en-US")
     {
-        var request = CreateRequest($"movie/{movieId}/credits");
+        var request = CreateRequest($"movie/{movieId}/credits")
+            .AddQueryParameter("language", language);
         return await _restClient.GetAsync<MovieCreditsResponse>(request);
     }
 
-    public async Task<MovieDetailsResponse?> FetchMovieDetailsAsync(int movieId)
+    public async Task<MovieDetailsResponse?> FetchMovieDetailsAsync(int movieId, string language = "en-US")
     {
-        var request = CreateRequest($"movie/{movieId}");
+        var request = CreateRequest($"movie/{movieId}")
+            .AddQueryParameter("language", language);
         return await _restClient.GetAsync<MovieDetailsResponse>(request);
     }
 
-    public async Task<(string? JsonResponse, List<PopularMovieResponse> Movies)> FetchPopularMoviesAsync(int count)
+    public async Task<(string? JsonResponse, List<PopularMovieResponse> Movies)> FetchPopularMoviesAsync(int count, string language = "en-US")
     {
-        var request = CreateRequest("movie/popular");
+        var request = CreateRequest("movie/popular")
+            .AddQueryParameter("language", language);
         var response = await _restClient.GetAsync(request);
 
         if (response == null 
@@ -60,21 +64,23 @@ internal class MovieApiIntegrationService : IMovieApiIntegrationService
         return (response.Content, movies);
     }
 
-    public async Task<string?> FetchMoviesPageAsync(int pageNumber)
+    public async Task<string?> FetchMoviesPageAsync(int pageNumber, string language = "en-US")
     {
         var request = CreateRequest("discover/movie")
             .AddQueryParameter("page", pageNumber.ToString())
-            .AddQueryParameter("sort_by", _tmdbSettings.SortBy);
+            .AddQueryParameter("sort_by", _tmdbSettings.SortBy)
+            .AddQueryParameter("language", language);
 
         var response = await _restClient.GetAsync(request);
         return response.Content;
     }
 
-    public async Task<List<SearchMovieResponse>> SearchMovie(string searchQuery)
+    public async Task<List<SearchMovieResponse>> SearchMovie(string searchQuery, string language = "en-US")
     {
         const int MaxResults = 8;
         var request = CreateRequest("search/movie")
-            .AddQueryParameter("query", searchQuery);
+            .AddQueryParameter("query", searchQuery)
+            .AddQueryParameter("language", language);
 
         var response = await _restClient.GetAsync(request);
 

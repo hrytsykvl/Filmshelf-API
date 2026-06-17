@@ -32,47 +32,50 @@ public class MovieService : IMovieService
         _mapper = mapper;
     }
 
-    public async Task<MovieDetailsDTO?> GetMovieAsync(int movieId)
+    public async Task<MovieDetailsDTO?> GetMovieAsync(int movieId, string language = LanguageConstants.English)
     {
-        var movie = await _unitOfWork.MovieRepository.GetMovieAsync(movieId);
-
-        if (movie != null)
+        if (language == LanguageConstants.English)
         {
-            return new MovieDetailsDTO
+            var movie = await _unitOfWork.MovieRepository.GetMovieAsync(movieId);
+
+            if (movie != null)
             {
-                Title = movie.Title,
-                Director = movie.Director.Name,
-                Genres = movie.MovieGenres
-                    .Select(mg => new GenreDTO
-                    {
-                        Id = mg.Genre.Id,
-                        Name = mg.Genre.Name
-                    })
-                    .ToList(),
-                Overview = movie.Overview,
-                ReleaseDate = movie.ReleaseDate,
-                Runtime = movie.Runtime,
-                PosterPath = movie.PosterPath,
-                AverageRating = movie.AverageRating,
-                Cast = movie.MovieActors
-                    .Select(ma => new CastMemberDTO
-                    {
-                        Id = ma.Actor.Id,
-                        Name = ma.Actor.Name,
-                        Character = ma.Role,
-                        ProfilePath = ma.Actor.ProfilePath
-                    })
-                    .ToList()
-            };
+                return new MovieDetailsDTO
+                {
+                    Title = movie.Title,
+                    Director = movie.Director.Name,
+                    Genres = movie.MovieGenres
+                        .Select(mg => new GenreDTO
+                        {
+                            Id = mg.Genre.Id,
+                            Name = mg.Genre.Name
+                        })
+                        .ToList(),
+                    Overview = movie.Overview,
+                    ReleaseDate = movie.ReleaseDate,
+                    Runtime = movie.Runtime,
+                    PosterPath = movie.PosterPath,
+                    AverageRating = movie.AverageRating,
+                    Cast = movie.MovieActors
+                        .Select(ma => new CastMemberDTO
+                        {
+                            Id = ma.Actor.Id,
+                            Name = ma.Actor.Name,
+                            Character = ma.Role,
+                            ProfilePath = ma.Actor.ProfilePath
+                        })
+                        .ToList()
+                };
+            }
         }
 
-        var movieDetails = await _movieApiIntegrationService.FetchMovieDetailsAsync(movieId);
+        var movieDetails = await _movieApiIntegrationService.FetchMovieDetailsAsync(movieId, language);
         if (movieDetails == null)
         {
             return null;
         }
 
-        var movieCredits = await _movieApiIntegrationService.FetchMovieCreditsAsync(movieId);
+        var movieCredits = await _movieApiIntegrationService.FetchMovieCreditsAsync(movieId, language);
         if (movieCredits == null
             || movieCredits.Crew == null)
         {
@@ -83,13 +86,16 @@ public class MovieService : IMovieService
                 .First(c => c.Job == _tmdbSettings.CrewJob).Id;
 
         var directorDetails = await _movieApiIntegrationService
-            .FetchPersonDetailsAsync<DirectorDetailsResponse>(directorId);
+            .FetchPersonDetailsAsync<DirectorDetailsResponse>(directorId, language);
         if (directorDetails == null)
         {
             return null;
         }
 
-        await AddMovieWithDetails(movieId, movieDetails, directorId, directorDetails, movieCredits);
+        if (language == LanguageConstants.English)
+        {
+            await AddMovieWithDetails(movieId, movieDetails, directorId, directorDetails, movieCredits);
+        }
 
         var movieDetailsDTO = movieDetails.ToMovieDetailsDTO(
             movieCredits.Cast.Take(_tmdbSettings.NumberOfActors),
@@ -205,10 +211,10 @@ public class MovieService : IMovieService
         return result;
     }
 
-    public async Task<List<MovieDTO>> SearchMovie(string searchQuery)
+    public async Task<List<MovieDTO>> SearchMovie(string searchQuery, string language = LanguageConstants.English)
     {
         var movies = await _movieApiIntegrationService
-            .SearchMovie(searchQuery);
+            .SearchMovie(searchQuery, language);
 
         var movieDTOs = _mapper.Map<List<MovieDTO>>(movies);
 

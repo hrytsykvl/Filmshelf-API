@@ -39,13 +39,18 @@ public class MoviePageService : IMoviePageService
         }
     }
 
-    public async Task<(IEnumerable<MovieDTO> Movies, int totalPages)> GetMoviesOnPageAsync(int pageNumber)
+    public async Task<(IEnumerable<MovieDTO> Movies, int totalPages)> GetMoviesOnPageAsync(int pageNumber, string language = LanguageConstants.English)
     {
+        if (language != LanguageConstants.English)
+        {
+            return await FetchMoviesPageDirectAsync(pageNumber, language);
+        }
+
         var moviePage = await _unitOfWork.MoviePageRepository.GetPageAsync(pageNumber);
 
         if (ShouldUpdatePage(moviePage))
         {
-            moviePage = await FetchAndSavePageAsync(pageNumber);
+            moviePage = await FetchAndSavePageAsync(pageNumber, language);
         }
 
         if (moviePage == null)
@@ -60,14 +65,29 @@ public class MoviePageService : IMoviePageService
                 : (movieResponse.Results, movieResponse.TotalPages);
     }
 
-    public async Task<IEnumerable<MovieDTO>> GetPopularMoviesPageAsync()
+    public async Task<IEnumerable<MovieDTO>> GetPopularMoviesPageAsync(string language = LanguageConstants.English)
     {
+        if (language != LanguageConstants.English)
+        {
+            var (_, movies) = await _movieApiIntegrationService
+                .FetchPopularMoviesAsync(_tmdbSettings.PopularMoviesToFetch, language);
+
+            return movies.Select(pm => new MovieDTO
+            {
+                Id = pm.Id,
+                Title = pm.Title,
+                PosterPath = pm.PosterPath,
+                AverageRating = pm.AverageRating,
+                ReleaseDate = pm.ReleaseDate
+            });
+        }
+
         var popularMoviesPage = await _unitOfWork.MoviePageRepository
             .GetPageAsync(moviePageType: MoviePageType.Popular);
 
         if (ShouldUpdatePage(popularMoviesPage))
         {
-            popularMoviesPage = await FetchAndSavePopularMoviesPageAsync();
+            popularMoviesPage = await FetchAndSavePopularMoviesPageAsync(language);
         }
 
         if (popularMoviesPage == null)
@@ -81,9 +101,9 @@ public class MoviePageService : IMoviePageService
         return movieResponse?.Results ?? Enumerable.Empty<MovieDTO>();
     }
 
-    private async Task<MoviePage?> FetchAndSavePageAsync(int pageNumber)
+    private async Task<MoviePage?> FetchAndSavePageAsync(int pageNumber, string language = LanguageConstants.English)
     {
-        var pageJson = await _movieApiIntegrationService.FetchMoviesPageAsync(pageNumber);
+        var pageJson = await _movieApiIntegrationService.FetchMoviesPageAsync(pageNumber, language);
 
         if (pageJson == null)
         {
@@ -123,10 +143,10 @@ public class MoviePageService : IMoviePageService
         return moviePage;
     }
 
-    private async Task<MoviePage?> FetchAndSavePopularMoviesPageAsync()
+    private async Task<MoviePage?> FetchAndSavePopularMoviesPageAsync(string language = LanguageConstants.English)
     {
         var (jsonResponse, popularMovies) = await _movieApiIntegrationService
-            .FetchPopularMoviesAsync(_tmdbSettings.PopularMoviesToFetch);
+            .FetchPopularMoviesAsync(_tmdbSettings.PopularMoviesToFetch, language);
 
         if (string.IsNullOrEmpty(jsonResponse))
         {
@@ -158,6 +178,32 @@ public class MoviePageService : IMoviePageService
         await _unitOfWork.SaveAsync();
 
         return moviePage;
+    }
+
+    private async Task<(IEnumerable<MovieDTO> Movies, int TotalPages)> FetchMoviesPageDirectAsync(int pageNumber, string language)
+    {
+        var pageJson = await _movieApiIntegrationService.FetchMoviesPageAsync(pageNumber, language);
+
+        if (pageJson == null)
+        {
+            return (Enumerable.Empty<MovieDTO>(), 0);
+        }
+
+        var jsonDoc = JsonDocument.Parse(pageJson);
+        var results = jsonDoc.RootElement.GetProperty("results");
+
+        var combinedResult = new
+        {
+            results,
+            total_pages = _tmdbSettings.TotalPages
+        };
+
+        var movieResponse = JsonSerializer.Deserialize<PageResponseWrapperDTO>(
+            JsonSerializer.Serialize(combinedResult));
+
+        return movieResponse == null
+            ? (Enumerable.Empty<MovieDTO>(), 0)
+            : (movieResponse.Results, movieResponse.TotalPages);
     }
 
     private bool ShouldUpdatePage(MoviePage? moviePage)

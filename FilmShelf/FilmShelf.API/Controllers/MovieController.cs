@@ -62,7 +62,7 @@ public class MovieController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MovieDetailsById(MovieRequestVM movieRequestVM)
     {
-        var movie = await _movieService.GetMovieAsync(movieRequestVM.Id);
+        var movie = await _movieService.GetMovieAsync(movieRequestVM.Id, movieRequestVM.Language);
 
         if (movie == null)
         {
@@ -86,12 +86,12 @@ public class MovieController : ControllerBase
             && pageRequestVM.Filter.ToLower() == "popular"
         )
         {
-            movies = await _moviePageService.GetPopularMoviesPageAsync();
+            movies = await _moviePageService.GetPopularMoviesPageAsync(pageRequestVM.Language);
         }
         else
         {
             var page = pageRequestVM.Page ?? 1;
-            (movies, totalPages) = await _moviePageService.GetMoviesOnPageAsync(page);
+            (movies, totalPages) = await _moviePageService.GetMoviesOnPageAsync(page, pageRequestVM.Language);
         }
 
         var movieListResponseVM = movies.ToMovieListResponseVM(totalPages);
@@ -111,9 +111,9 @@ public class MovieController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<IActionResult> SearchMovies(string searchQuery)
+    public async Task<IActionResult> SearchMovies(string searchQuery, [FromQuery(Name = "language")] string language = "en-US")
     {
-        var movies = await _movieService.SearchMovie(searchQuery);
+        var movies = await _movieService.SearchMovie(searchQuery, language);
 
         return Ok(_mapper.Map<List<MovieResponseVM>>(movies));
     }

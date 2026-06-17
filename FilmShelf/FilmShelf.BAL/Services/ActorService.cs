@@ -3,6 +3,7 @@ using FilmShelf.BAL.Interfaces;
 using FilmShelf.BAL.MappingExtensions;
 using FilmShelf.DAL.Interfaces;
 using FilmShelf.TMDbClient.Interfaces;
+using FilmShelf.TMDbClient.Options;
 using FilmShelf.TMDbClient.Responses;
 
 namespace FilmShelf.BAL.Services;
@@ -20,7 +21,7 @@ public class ActorService : IActorService
         _movieApiIntegrationService = movieApiIntegrationService;
     }
 
-    public async Task<ActorDetailsDTO?> GetActorDetailsAsync(int actorId)
+    public async Task<ActorDetailsDTO?> GetActorDetailsAsync(int actorId, string language = LanguageConstants.English)
     {
         var actor = await _unitOfWork.ActorRepository.GetActorAsync(actorId);
 
@@ -29,25 +30,28 @@ public class ActorService : IActorService
             return null;
         }
 
-        if (actor.Bio != null && actor.BirthDate.HasValue)
+        if (language == LanguageConstants.English && actor.Bio != null && actor.BirthDate.HasValue)
         {
             return actor.ToActorDetailsDTO();
         }
 
         var actorDetails = await _movieApiIntegrationService
-            .FetchPersonDetailsAsync<ActorDetailsResponse>(actorId);
+            .FetchPersonDetailsAsync<ActorDetailsResponse>(actorId, language);
         if (actorDetails == null)
         {
             return null;
         }
 
-        _unitOfWork.ActorRepository.UpdateActor(
-            actor,
-            actorDetails.Biography,
-            actorDetails.Birthday);
+        if (language == LanguageConstants.English)
+        {
+            _unitOfWork.ActorRepository.UpdateActor(
+                actor,
+                actorDetails.Biography,
+                actorDetails.Birthday);
 
-        await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveAsync();
+        }
 
-        return actor.ToActorDetailsDTO();
+        return actor.ToActorDetailsDTOWithOverride(actorDetails.Biography, actorDetails.Birthday);
     }
 }
